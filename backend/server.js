@@ -266,12 +266,19 @@ mongoose.connect(MONGO_URI, {
   })
   .catch(err => console.error('MongoDB connection error:', err.message));
 
-// Global middleware to check MongoDB connection status for API routes
-app.use('/api', (req, res, next) => {
+// Global middleware to check MongoDB connection status for API routes (Serverless-friendly)
+app.use('/api', async (req, res, next) => {
   if (mongoose.connection.readyState !== 1) {
-    return res.status(503).json({
-      error: 'MongoDB Database Service is currently stopped or offline. Please start the MongoDB service on your server.'
-    });
+    try {
+      console.log('[Database] Connection not ready. Awaiting/initiating connection...');
+      await mongoose.connect(MONGO_URI, {
+        serverSelectionTimeoutMS: 5000
+      });
+    } catch (err) {
+      return res.status(503).json({
+        error: 'MongoDB Database Service is currently stopped or offline. Please check your Atlas connection. Error: ' + err.message
+      });
+    }
   }
   next();
 });
