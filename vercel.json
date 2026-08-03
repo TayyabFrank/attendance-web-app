@@ -13,15 +13,11 @@
       "use": "@vercel/node"
     },
     {
-      "src": "api/*.py",
+      "src": "api/extract.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
-    {
-      "src": "/api/scan-attendance",
-      "dest": "/api/scan-attendance.py"
-    },
     {
       "src": "/api/extract",
       "dest": "/api/extract.py"
@@ -31,11 +27,20 @@
       "dest": "/api/index.js"
     },
     {
-      "handle": "filesystem"
+      "src": "/assets/(.*)",
+      "dest": "/frontend/assets/$1"
+    },
+    {
+      "src": "/favicon.svg",
+      "dest": "/frontend/favicon.svg"
+    },
+    {
+      "src": "/icons.svg",
+      "dest": "/frontend/icons.svg"
     },
     {
       "src": "/(.*)",
-      "dest": "/index.html"
+      "dest": "/frontend/index.html"
     }
   ]
 }
