@@ -2694,15 +2694,17 @@ app.post('/api/holidays/import', requireRole(['admin', 'super-admin', 'hr-admin'
   }
 });
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`Server running on port ${PORT}`);
-  // Start the background face service
-  startFaceService();
-  // Start auto-checkout job on startup
-  performAutoCheckouts();
-  // Run auto-checkout job every minute
-  setInterval(performAutoCheckouts, 60000);
-});
+if (!process.env.VERCEL) {
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`Server running on port ${PORT}`);
+    // Start the background face service
+    startFaceService();
+    // Start auto-checkout job on startup
+    performAutoCheckouts();
+    // Run auto-checkout job every minute
+    setInterval(performAutoCheckouts, 60000);
+  });
+}
 app.post('/api/verify-face', async (req, res) => {
   try {
     const { employeeId, frameA, frameB, token, timestamp, signature } = req.body;
@@ -2730,4 +2732,6 @@ app.post('/api/verify-face', async (req, res) => {
     res.status(500).json({ error: 'Server error during verification' });
   }
 });
+
+module.exports = app;
 

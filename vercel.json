@@ -9,14 +9,26 @@
       }
     },
     {
+      "src": "backend/server.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "api/*.py",
       "use": "@vercel/python"
     }
   ],
   "routes": [
     {
+      "src": "/api/scan-attendance",
+      "dest": "/api/scan-attendance.py"
+    },
+    {
+      "src": "/api/extract",
+      "dest": "/api/extract.py"
+    },
+    {
       "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "dest": "/backend/server.js"
     },
     {
       "src": "/(.*)",
