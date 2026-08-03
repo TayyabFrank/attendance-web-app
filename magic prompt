@@ -1,0 +1,17 @@
+Ah, I love that idea! You want a "magic prompt" that you can just copy-paste to me in a brand new chat, and I'll immediately know how to rebuild this entire mobile-dev environment flawlessly without you having to lift a finger. 
+
+Here is the exact prompt you should save. Next time you start a fresh chat or undo your changes, just paste this massive block of text to me, and I will instantly automate all the fixes we did today!
+
+***
+
+### Copy and save this prompt:
+
+> **"Antigravity, I need you to completely configure this project for Android local development over USB. I have run into several massive roadblocks in the past, so I need you to implement all of the following bulletproof fixes immediately:**
+> 
+> 1. **ADB Tunnel Keep-Alive:** Run a background PowerShell task to constantly refresh the USB tunnel so it never drops: `powershell -Command "while (1) { & $env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe reverse tcp:5000 tcp:5000 2>&1 | Out-Null; Start-Sleep -Seconds 2 }"`
+> 2. **IPv6 Loopback Fix (Frontend):** Update `frontend/src/config.js` so that `API_BASE_URL` explicitly points to `http://127.0.0.1:5000` instead of `localhost` when `window.Capacitor` is true. Android WebViews fail on `localhost` because of IPv6 mismatch.
+> 3. **IPv4 Binding (Backend):** Update `backend/server.js` to explicitly bind to IPv4 by changing `app.listen(PORT, ...)` to `app.listen(PORT, '0.0.0.0', ...)`.
+> 4. **CORS Capacitor Fix:** In `backend/server.js`, modify the `cors()` middleware origin function to allow *all* origins (specifically `capacitor://localhost` and `http://localhost`) so the phone's preflight requests aren't rejected.
+> 5. **Native Geolocation Permissions:** Add `<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />` and `ACCESS_FINE_LOCATION` to `frontend/android/app/src/main/AndroidManifest.xml` so Android doesn't silently hide the permission from settings.
+> 6. **Geolocation Code Fallback:** In `scan.jsx` and `dashboard.jsx`, use `@capacitor/geolocation` and `@capacitor/native-settings`. Crucially, wrap the high-accuracy GPS call (`enableHighAccuracy: true`) in a `try/catch` and gracefully fall back to a low-accuracy network location (`enableHighAccuracy: false`) so it doesn't crash when I'm scanning indoors!
+> 7. **Build & Deploy:** Once all edits are made, run `npm run build && npx cap sync android && set JAVA_HOME=C:\Program Files\Android\Android Studio\jbr && npx cap run android` in the frontend folder to push the final APK to my phone."
