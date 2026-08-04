@@ -1,5 +1,11 @@
 import os
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
 import sys
+import gc
 import base64
 import numpy as np
 import cv2
@@ -29,8 +35,8 @@ def get_face_analysis():
     global face_analysis
     if face_analysis is None:
         try:
-            print("Initializing InsightFace buffalo_l in memory...")
-            face_analysis = FaceAnalysis(name='buffalo_l', allowed_modules=['detection', 'recognition'], providers=['CPUExecutionProvider'])
+            print("Initializing InsightFace buffalo_sc in memory...")
+            face_analysis = FaceAnalysis(name='buffalo_sc', allowed_modules=['detection', 'recognition'], providers=['CPUExecutionProvider'])
             face_analysis.prepare(ctx_id=0, det_size=(320, 320))
             print("InsightFace model loaded successfully.")
         except Exception as e:
@@ -65,7 +71,9 @@ def get_embedding_from_b64(b64_image):
     if not faces:
         return None
 
-    return faces[0].normed_embedding.tolist()
+    emb = faces[0].normed_embedding.tolist()
+    gc.collect()
+    return emb
 
 def perform_liveness_check(frame_a_b64, frame_b_b64):
     img_a = decode_image_from_b64(frame_a_b64)
@@ -102,16 +110,36 @@ def perform_liveness_check(frame_a_b64, frame_b_b64):
     if high_brights > 0.08:
         return False, "Spoofing detected: High glare display screen reflection."
 
+    gray_face_a = cv2.cvtColor(face_crop_a, cv2.COLOR_BGR2GRAY)
+    
+    # 1. 3D Structure Check (Standard Deviation of Flash Reflection)
+    # A flat screen reflects light uniformly (low std dev). A real 3D face 
+    # reflects light unevenly across the nose, cheeks, and forehead (high std dev).
+    diff_face = cv2.absdiff(gray_face_a, gray_face)
+    std_diff = np.std(diff_face)
+    
+    if std_diff < 4.0:
+        return False, "Spoofing detected: Flat 2D surface reflection (Screen/Paper)."
+        
+    # 2. Flash Brightness Check
+    mean_a = np.mean(gray_face_a)
+    mean_b = np.mean(gray_face)
+    if (mean_a - mean_b) < 1.5:
+        return False, "Spoofing detected: Flash brightness differential failed."
+
+    # 3. Enhanced Color Flash Check
     avg_color_a = np.mean(face_crop_a, axis=(0, 1))
     avg_color_b = np.mean(face_crop_b, axis=(0, 1))
 
     pink_ratio_a = (avg_color_a[2] + avg_color_a[0]) / (avg_color_a[1] + 1e-5)
     pink_ratio_b = (avg_color_b[2] + avg_color_b[0]) / (avg_color_b[1] + 1e-5)
 
-    if (pink_ratio_a - pink_ratio_b) < 0.08:
+    if (pink_ratio_a - pink_ratio_b) < 0.10:
          return False, "Spoofing detected: No color flash reflection on face (Screen detected)."
 
-    return True, faces_b[0].normed_embedding.tolist()
+    emb = faces_b[0].normed_embedding.tolist()
+    gc.collect()
+    return True, emb
 
 @fastapi_app.post("/extract")
 async def extract(payload: FacePayload):

@@ -11,17 +11,9 @@
     {
       "src": "api/index.js",
       "use": "@vercel/node"
-    },
-    {
-      "src": "api/extract.py",
-      "use": "@vercel/python"
     }
   ],
   "routes": [
-    {
-      "src": "/api/extract",
-      "dest": "/api/extract.py"
-    },
     {
       "src": "/api/(.*)",
       "dest": "/api/index.js"

@@ -820,6 +820,18 @@ app.post('/api/attendance/submit-log', async (req, res) => {
           });
         }
       }
+
+      // 🚨 Mock Location / Fake GPS Detection 🚨
+      // Real GPS accuracy is almost never perfectly 1.0 or 0.0 meters. Fake GPS apps often hardcode this.
+      // We also check for the explicit isMocked flag (if the native plugin exposes it).
+      if (settings.geofenceEnabled !== false) {
+          const acc = req.body.accuracy;
+          if (req.body.isMocked === true || acc === 1 || acc === 0 || acc === 5.0) {
+              return res.status(400).json({ 
+                  error: 'Fake GPS / Mock Location detected! Please disable coordinate changers to mark attendance.' 
+              });
+          }
+      }
     }
 
     const employee = await Employee.findOne({ employeeId: employeeId.trim(), isDeleted: { $ne: true } });

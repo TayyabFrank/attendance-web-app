@@ -13,8 +13,8 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Pre-download the buffalo_l face model on build so that it does not slow down the boot time when deployed
-RUN python -c "import insightface; insightface.app.FaceAnalysis(name='buffalo_l')"
+# Pre-download the buffalo_sc face model on build so that it does not slow down the boot time when deployed
+RUN python -c "import insightface; insightface.app.FaceAnalysis(name='buffalo_sc')"
 
 COPY . .
 

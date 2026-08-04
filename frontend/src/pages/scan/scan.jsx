@@ -44,7 +44,9 @@ const Scan = () => {
         const position = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000, maximumAge: 0 });
         setCoords({
           latitude: position.coords.latitude,
-          longitude: position.coords.longitude
+          longitude: position.coords.longitude,
+          accuracy: position.coords.accuracy,
+          isMocked: position.mocked || false
         });
         setLocationStatus('granted');
         setErrorMsg('');
@@ -53,7 +55,9 @@ const Scan = () => {
         const lowPosition = await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 15000, maximumAge: 0 });
         setCoords({
           latitude: lowPosition.coords.latitude,
-          longitude: lowPosition.coords.longitude
+          longitude: lowPosition.coords.longitude,
+          accuracy: lowPosition.coords.accuracy,
+          isMocked: lowPosition.mocked || false
         });
         setLocationStatus('granted');
         setErrorMsg('');
@@ -453,6 +457,8 @@ const Scan = () => {
           photo: scannedPhotoB64,
           latitude: coords.latitude,
           longitude: coords.longitude,
+          accuracy: coords.accuracy,
+          isMocked: coords.isMocked,
           timezoneOffset: new Date().getTimezoneOffset()
         })
       });
