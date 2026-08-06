@@ -2859,12 +2859,17 @@ const AdminDashboard = () => {
                             let newName = '';
                             let action = 'add';
                             if (hol) {
-                               const p = window.prompt(`Current Holiday: ${hol.name}\n\nEnter a new name to rename it, or leave this box COMPLETELY EMPTY and click OK to REMOVE it:`, hol.name);
-                               if (p === null) return;
-                               if (p.trim() === '') {
+                               const actionChoice = window.confirm(`This is currently marked as a holiday: ${hol.name}\n\nClick "OK" if you want to completely REMOVE this holiday.\nClick "Cancel" if you want to RENAME it or keep it.`);
+                               if (actionChoice) {
                                  action = 'remove';
                                } else {
-                                 newName = p;
+                                 const p = window.prompt(`Enter a new name for this holiday (or press Cancel to do nothing):`, hol.name);
+                                 if (p === null) return;
+                                 if (p.trim() === '') {
+                                    alert('Name cannot be empty when renaming! To remove it, click OK on the first prompt.');
+                                    return;
+                                 }
+                                 newName = p.trim();
                                  action = 'rename';
                                }
                             } else {

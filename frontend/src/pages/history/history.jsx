@@ -413,6 +413,7 @@ const History = () => {
       const isWeekend = (dayOfWeek === 0 || dayOfWeek === 6);
 
       let type = 'plain';
+      let holidayName = '';
       if (matchingLog) {
         if (matchingLog.status === 'Absent') {
           type = 'absent';
@@ -430,7 +431,6 @@ const History = () => {
         const isSaturdayOff = officeSettings?.saturdayOff && dayOfWeek === 6;
         const isSunday = dayOfWeek === 0;
 
-        let holidayName = '';
         if (hol) holidayName = hol.name;
         else if (isSunday) holidayName = 'Sunday Off';
         else if (isSaturdayOff) holidayName = 'Saturday Off';
