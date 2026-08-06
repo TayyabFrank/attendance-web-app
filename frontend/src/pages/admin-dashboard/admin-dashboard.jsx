@@ -2856,14 +2856,30 @@ const AdminDashboard = () => {
                           className={cellClass}
                           onClick={async () => {
                             if (isSatOff || isSunday) return;
-                            const name = window.prompt(hol ? 'Change or remove holiday? (Leave empty to remove)' : 'Enter holiday name:');
-                            if (name === null) return;
+                            let newName = '';
+                            let action = 'add';
+                            if (hol) {
+                               const p = window.prompt(`Current Holiday: ${hol.name}\n\nEnter a new name to rename it, or leave this box COMPLETELY EMPTY and click OK to REMOVE it:`, hol.name);
+                               if (p === null) return;
+                               if (p.trim() === '') {
+                                 action = 'remove';
+                               } else {
+                                 newName = p;
+                                 action = 'rename';
+                               }
+                            } else {
+                               const p = window.prompt('Enter new holiday name:');
+                               if (p === null) return;
+                               newName = p.trim() || 'Holiday';
+                               action = 'add';
+                            }
+
                             try {
                               const res = await fetchWithAuth(`${API_BASE_URL}/api/holidays/toggle`, {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json', 'x-user-role': getAdminRole() },
                                 credentials: 'include',
-                                body: JSON.stringify({ date: dateStr, name: name || 'Holiday', type: 'company' })
+                                body: JSON.stringify({ date: dateStr, name: newName, action, type: 'company' })
                               });
                               if (res.ok) fetchData();
                             } catch (err) {}

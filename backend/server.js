@@ -2675,14 +2675,18 @@ app.get('/api/holidays', async (req, res) => {
 // POST toggle holiday (add/remove)
 app.post('/api/holidays/toggle', requireRole(['admin', 'super-admin', 'hr-admin']), async (req, res) => {
   try {
-    const { date, name, type } = req.body;
+    const { date, name, type, action } = req.body;
     const [year, month, day] = date.split('-');
     const dateObj = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
 
     const existing = await Holiday.findOne({ date: dateObj });
-    if (existing) {
-      await Holiday.deleteOne({ _id: existing._id });
+    if (action === 'remove' || (existing && !action)) {
+      if (existing) await Holiday.deleteOne({ _id: existing._id });
       res.json({ message: 'Holiday removed', action: 'removed' });
+    } else if (existing) {
+      existing.name = name || 'Holiday';
+      await existing.save();
+      res.json({ message: 'Holiday renamed', action: 'renamed', holiday: existing });
     } else {
       const holiday = new Holiday({ date: dateObj, name: name || 'Holiday', type: type || 'company' });
       await holiday.save();
