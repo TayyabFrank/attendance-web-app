@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { checkAndRequestPermissions } from './utils/permissions';
 import OfflineBanner from './components/OfflineBanner';
+import ErrorBoundary from './components/ErrorBoundary';
 import './App.css';
 import Splash from './pages/splash/splash';
 import Selection from './pages/selection/selection';
@@ -31,18 +32,20 @@ function App() {
       {/* Main Container */}
       <main className="app-main">
         <OfflineBanner />
-        <Routes>
-          <Route path="/" element={<Selection />} />
-          <Route path="/admin-login" element={<AdminLogin />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/admin-dashboard" element={<AdminDashboard />} />
-          <Route path="/scan" element={<Scan />} />
-          <Route path="/history" element={<History />} />
-          <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/" element={<Selection />} />
+            <Route path="/admin-login" element={<AdminLogin />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/admin-dashboard" element={<AdminDashboard />} />
+            <Route path="/scan" element={<Scan />} />
+            <Route path="/history" element={<History />} />
+            <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </ErrorBoundary>
       </main>
     </Router>
   );

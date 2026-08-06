@@ -283,14 +283,14 @@ const EmployeeDashboard = () => {
             </tr>
           </thead>
           <tbody>
-            {logs.map((log, index) => (
+            {Array.isArray(logs) ? logs.map((log, index) => (
               <tr key={index}>
                 <td>{log.date}</td>
                 <td>{log.status}</td>
                 <td>{log.checkIn || '--:--'}</td>
                 <td>{log.checkOut || '--:--'}</td>
               </tr>
-            ))}
+            )) : <tr><td colSpan="4">No logs found or error fetching logs.</td></tr>}
           </tbody>
         </table>
       </section>
