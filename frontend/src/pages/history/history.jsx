@@ -320,9 +320,10 @@ const History = () => {
     fetch(`${API_BASE_URL}/api/attendance/logs/${emp.employeeId}`)
       .then(res => res.json())
       .then(data => {
-        setLogs(data);
-        const present = data.filter(log => log.status === 'Present' || log.status === 'Active' || log.status === 'Manual Verify').length;
-        const absent = data.filter(log => log.status === 'Absent').length;
+        const logsArray = Array.isArray(data) ? data : [];
+        setLogs(logsArray);
+        const present = logsArray.filter(log => log.status === 'Present' || log.status === 'Active' || log.status === 'Manual Verify').length;
+        const absent = logsArray.filter(log => log.status === 'Absent').length;
         const total = present + absent;
         const percentage = total > 0 ? Math.round((present / total) * 100) : 100;
         setStats({ present, absent, percentage });
@@ -340,6 +341,12 @@ const History = () => {
       .then(res => res.json())
       .then(data => setOfficeSettings(data))
       .catch(err => console.error('Error fetching office settings:', err));
+
+    // Fetch holidays
+    fetch(`${API_BASE_URL}/api/holidays`)
+      .then(res => res.json())
+      .then(data => setHolidays(Array.isArray(data) ? data : []))
+      .catch(err => console.error('Error fetching holidays:', err));
 
     // Load request logs and notification flags
     fetchEmployeeRequests(emp.employeeId);
@@ -423,7 +430,11 @@ const History = () => {
         const isSaturdayOff = officeSettings?.saturdayOff && dayOfWeek === 6;
         const isSunday = dayOfWeek === 0;
 
-        
+        let holidayName = '';
+        if (hol) holidayName = hol.name;
+        else if (isSunday) holidayName = 'Sunday Off';
+        else if (isSaturdayOff) holidayName = 'Saturday Off';
+
         if (isSunday || isSaturdayOff || hol) {
           type = 'weekend-holiday';
         }
@@ -434,7 +445,7 @@ const History = () => {
         type = type === 'present' ? 'present today-highlight' : 'today';
       }
 
-      days.push({ day: dayStr, type, log: matchingLog });
+      days.push({ day: dayStr, type, log: matchingLog, holidayName: type === 'weekend-holiday' ? holidayName : '' });
     }
 
     return days;
@@ -1106,7 +1117,7 @@ const History = () => {
                   >
                     <span>{item.day}</span>
                     {item.day && item.type === 'weekend-holiday' && (
-                      <span style={{ fontSize: '9px', fontWeight: '500', color: '#64748b', display: 'block', marginTop: '2px' }}>Holiday</span>
+                      <span style={{ fontSize: '8px', fontWeight: '500', color: '#64748b', display: 'block', marginTop: '2px', textAlign: 'center', lineHeight: '1.1' }}>{item.holidayName || 'Holiday'}</span>
                     )}
                     {item.day && item.log && (
                       <div style={{ fontSize: '8.5px', color: 'inherit', marginTop: '2px', display: 'flex', flexDirection: 'column', alignItems: 'center', lineHeight: '1' }}>
