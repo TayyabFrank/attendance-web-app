@@ -2677,22 +2677,26 @@ app.post('/api/holidays/toggle', requireRole(['admin', 'super-admin', 'hr-admin'
   try {
     const { date, name, type, action } = req.body;
     const [year, month, day] = date.split('-');
-    const dateObj = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day)));
+    const startOfDay = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), 0, 0, 0));
+    const endOfDay = new Date(Date.UTC(parseInt(year), parseInt(month) - 1, parseInt(day), 23, 59, 59, 999));
 
-    const existing = await Holiday.findOne({ date: dateObj });
-    if (action === 'remove' || (existing && !action)) {
-      if (existing) await Holiday.deleteOne({ _id: existing._id });
-      res.json({ message: 'Holiday removed', action: 'removed' });
-    } else if (existing) {
+    if (action === 'remove') {
+      await Holiday.deleteMany({ date: { $gte: startOfDay, $lte: endOfDay } });
+      return res.json({ message: 'Holiday removed', action: 'removed' });
+    }
+
+    const existing = await Holiday.findOne({ date: { $gte: startOfDay, $lte: endOfDay } });
+    if (existing) {
       existing.name = name || 'Holiday';
       await existing.save();
-      res.json({ message: 'Holiday renamed', action: 'renamed', holiday: existing });
+      return res.json({ message: 'Holiday renamed', action: 'renamed', holiday: existing });
     } else {
-      const holiday = new Holiday({ date: dateObj, name: name || 'Holiday', type: type || 'company' });
+      const holiday = new Holiday({ date: startOfDay, name: name || 'Holiday', type: type || 'company' });
       await holiday.save();
-      res.json({ message: 'Holiday added', action: 'added', holiday });
+      return res.json({ message: 'Holiday added', action: 'added', holiday });
     }
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: 'Server error toggling holiday' });
   }
 });
