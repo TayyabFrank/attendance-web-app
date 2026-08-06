@@ -246,7 +246,7 @@ app.use('/.well-known', express.static(path.join(__dirname, '.well-known')));
 
 // MongoDB connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://uetkskshared_db_user:m9D92J9ab9WBnfnQ@cluster0.svhx4z2.mongodb.net/attendance?retryWrites=true&w=majority';
-mongoose.set('bufferCommands', false); // Disable command buffering
+mongoose.set('bufferCommands', true); // Allow commands to buffer while connecting (Fix for Vercel cold starts)
 mongoose.connect(MONGO_URI, {
   serverSelectionTimeoutMS: 5000
 })
