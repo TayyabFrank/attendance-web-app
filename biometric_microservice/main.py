@@ -116,13 +116,13 @@ def perform_liveness_check(frame_a_b64, frame_b_b64):
     diff_face = cv2.absdiff(gray_face_a, gray_face)
     std_diff = np.std(diff_face)
     
-    if std_diff < 4.0:
+    if std_diff < 1.5:
         return False, "Spoofing detected: Flat 2D surface reflection (Screen/Paper)."
         
     # 2. Flash Brightness Check
     mean_a = np.mean(gray_face_a)
     mean_b = np.mean(gray_face)
-    if (mean_a - mean_b) < 1.5:
+    if (mean_a - mean_b) < 0.5:
         return False, "Spoofing detected: Flash brightness differential failed."
 
     # 3. Enhanced Color Flash Check
@@ -132,7 +132,7 @@ def perform_liveness_check(frame_a_b64, frame_b_b64):
     pink_ratio_a = (avg_color_a[2] + avg_color_a[0]) / (avg_color_a[1] + 1e-5)
     pink_ratio_b = (avg_color_b[2] + avg_color_b[0]) / (avg_color_b[1] + 1e-5)
 
-    if (pink_ratio_a - pink_ratio_b) < 0.10:
+    if (pink_ratio_a - pink_ratio_b) < 0.04:
          return False, "Spoofing detected: No color flash reflection on face (Screen detected)."
 
     emb = faces_b[0].normed_embedding.tolist()

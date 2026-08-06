@@ -78,7 +78,7 @@ def perform_liveness_check(frame_a_b64, frame_b_b64):
     
     mean_diff = np.mean(cv2.absdiff(gray_a, gray_b))
 
-    if mean_diff < 0.45:
+    if mean_diff < 0.15:
         return False, "Spoofing detected: Static display/photo presentation attack."
 
     box_b = faces_b[0].bbox.astype(int)
@@ -99,7 +99,7 @@ def perform_liveness_check(frame_a_b64, frame_b_b64):
     pink_ratio_a = (avg_color_a[2] + avg_color_a[0]) / (avg_color_a[1] + 1e-5)
     pink_ratio_b = (avg_color_b[2] + avg_color_b[0]) / (avg_color_b[1] + 1e-5)
 
-    if (pink_ratio_a - pink_ratio_b) < 0.08:
+    if (pink_ratio_a - pink_ratio_b) < 0.04:
          return False, "Spoofing detected: No color flash reflection on face (Screen detected)."
 
     return True, faces_b[0].normed_embedding.tolist()
