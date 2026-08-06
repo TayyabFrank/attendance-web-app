@@ -8,6 +8,7 @@ const EmployeeDashboard = () => {
   const navigate = useNavigate();
   const [employee, setEmployee] = useState(null);
   const [logs, setLogs] = useState([]);
+  const [holidays, setHolidays] = useState([]);
 
   // Profile Card States
   const [showProfileCard, setShowProfileCard] = useState(false);
@@ -42,6 +43,19 @@ const EmployeeDashboard = () => {
       }
     };
     fetchLogs();
+
+    const fetchHolidays = async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/holidays`);
+        if (res.ok) {
+          const data = await res.json();
+          setHolidays(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch holidays', err);
+      }
+    };
+    fetchHolidays();
   }, [navigate]);
 
   const isMountedRef = useRef(true);
@@ -268,6 +282,20 @@ const EmployeeDashboard = () => {
         <div className="stat-card">
           <h3>Shift Timings</h3>
           <p>{employee.arrivalTime} - {employee.departureTime}</p>
+        </div>
+        <div className="stat-card upcoming-holidays" style={{ minWidth: '250px' }}>
+          <h3>Upcoming Holidays</h3>
+          <div style={{ marginTop: '10px', maxHeight: '100px', overflowY: 'auto' }}>
+            {holidays.filter(h => new Date(h.date) >= new Date(new Date().setHours(0,0,0,0))).slice(0, 3).map((h, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', borderBottom: '1px solid #e2e8f0', paddingBottom: '4px' }}>
+                <span style={{ fontWeight: '600', color: '#1e293b', fontSize: '14px' }}>{h.name}</span>
+                <span style={{ fontSize: '13px', color: '#64748b' }}>{new Date(h.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+              </div>
+            ))}
+            {holidays.filter(h => new Date(h.date) >= new Date(new Date().setHours(0,0,0,0))).length === 0 && (
+              <p style={{ fontSize: '14px', color: '#64748b', margin: 0 }}>No upcoming holidays.</p>
+            )}
+          </div>
         </div>
       </section>
 
