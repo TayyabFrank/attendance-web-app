@@ -171,7 +171,7 @@ async function extractEmbedding(facePhotoB64, retries = 3) {
               try {
                 const data = JSON.parse(body);
                 if (data.embedding) return resolve(data.embedding);
-                return reject(new Error(data.error || 'Failed to extract embedding'));
+                return reject(new Error(data.error || data.detail || 'Failed to extract embedding'));
               } catch (e) {
                 return reject(new Error('JSON parse error from face service'));
               }
@@ -180,9 +180,9 @@ async function extractEmbedding(facePhotoB64, retries = 3) {
                 const data = JSON.parse(body);
                 // If it's a 400 error (like spoofing detected), do NOT retry. Bubble up immediately.
                 if (res.statusCode === 400) {
-                  return reject(new Error(data.error || 'Face validation failed'));
+                  return reject(new Error(data.error || data.detail || 'Face validation failed'));
                 }
-                return reject(new Error(data.error || `HTTP error ${res.statusCode}`));
+                return reject(new Error(data.error || data.detail || `HTTP error ${res.statusCode}`));
               } catch (_) {
                 return reject(new Error(`Face service returned HTTP ${res.statusCode}`));
               }
