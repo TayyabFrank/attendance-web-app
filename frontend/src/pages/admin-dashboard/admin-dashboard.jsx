@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import './admin-dashboard.css';
 import DepartmentDeleteModal from './DepartmentDeleteModal';
 import EmployeeProfileModal from './EmployeeProfileModal';
+import HolidayModal from './HolidayModal';
 
 const fetchWithAuth = async (url, options = {}) => {
   const token = localStorage.getItem('adminToken');
@@ -101,6 +102,9 @@ const AdminDashboard = () => {
   const [goalTrackingSort, setGoalTrackingSort] = useState({ column: 'name', direction: 'asc' });
   const [goalTrackingViewMode, setGoalTrackingViewMode] = useState('week'); // 'week' | 'month'
   const [goalTrackingDateOffset, setGoalTrackingDateOffset] = useState(0);
+
+  const [isLoading, setIsLoading] = useState(true);
+  const [holidayModal, setHolidayModal] = useState({ isOpen: false, dateStr: '', hol: null });
 
   useEffect(() => {
     const fetchAddress = async () => {
@@ -676,6 +680,43 @@ const AdminDashboard = () => {
       }
     } catch (err) {
       console.error('Error fetching admin dashboard data:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleHolidayAction = async (dateStr, newName, action, holToUpdate) => {
+    // Optimistic update
+    setHolidays(prev => {
+      if (action === 'remove') {
+        return prev.filter(h => h.date.split('T')[0] !== dateStr);
+      } else if (action === 'add') {
+        return [...prev, { date: dateStr + 'T00:00:00.000Z', name: newName, type: 'company' }];
+      } else if (action === 'rename') {
+        return prev.map(h => h.date.split('T')[0] === dateStr ? { ...h, name: newName } : h);
+      }
+      return prev;
+    });
+
+    setHolidayModal({ isOpen: false, dateStr: '', hol: null });
+
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/holidays/toggle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-user-role': getAdminRole() },
+        credentials: 'include',
+        body: JSON.stringify({ date: dateStr, name: newName, action, type: 'company' })
+      });
+      if (!res.ok) {
+        // Revert on failure
+        const holRes = await fetchWithAuth(`${API_BASE_URL}/api/holidays`, { headers: { 'x-user-role': getAdminRole() }, credentials: 'include' });
+        if (holRes.ok) {
+          const holData = await holRes.json();
+          setHolidays(Array.isArray(holData) ? holData : []);
+        }
+      }
+    } catch (err) {
+      console.error('Holiday toggle error', err);
     }
   };
 
@@ -2854,40 +2895,9 @@ const AdminDashboard = () => {
                         <div
                           key={idx}
                           className={cellClass}
-                          onClick={async () => {
+                          onClick={() => {
                             if (isSatOff || isSunday) return;
-                            let newName = '';
-                            let action = 'add';
-                            if (hol) {
-                               const actionChoice = window.confirm(`This is currently marked as a holiday: ${hol.name}\n\nClick "OK" if you want to completely REMOVE this holiday.\nClick "Cancel" if you want to RENAME it or keep it.`);
-                               if (actionChoice) {
-                                 action = 'remove';
-                               } else {
-                                 const p = window.prompt(`Enter a new name for this holiday (or press Cancel to do nothing):`, hol.name);
-                                 if (p === null) return;
-                                 if (p.trim() === '') {
-                                    alert('Name cannot be empty when renaming! To remove it, click OK on the first prompt.');
-                                    return;
-                                 }
-                                 newName = p.trim();
-                                 action = 'rename';
-                               }
-                            } else {
-                               const p = window.prompt('Enter new holiday name:');
-                               if (p === null) return;
-                               newName = p.trim() || 'Holiday';
-                               action = 'add';
-                            }
-
-                            try {
-                              const res = await fetchWithAuth(`${API_BASE_URL}/api/holidays/toggle`, {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json', 'x-user-role': getAdminRole() },
-                                credentials: 'include',
-                                body: JSON.stringify({ date: dateStr, name: newName, action, type: 'company' })
-                              });
-                              if (res.ok) fetchData();
-                            } catch (err) {}
+                            setHolidayModal({ isOpen: true, dateStr, hol });
                           }}
                         >
                           <span className="holiday-date-num">{date.getDate()}</span>
@@ -4259,6 +4269,35 @@ const AdminDashboard = () => {
           fetchWithAuth={fetchWithAuth}
         />
       )}
+
+      {holidayModal.isOpen && (
+        <HolidayModal
+          isOpen={holidayModal.isOpen}
+          onClose={() => setHolidayModal({ isOpen: false, dateStr: '', hol: null })}
+          onSave={(newName) => handleHolidayAction(holidayModal.dateStr, newName, holidayModal.hol ? 'rename' : 'add', holidayModal.hol)}
+          onDelete={() => handleHolidayAction(holidayModal.dateStr, '', 'remove', holidayModal.hol)}
+          initialName={holidayModal.hol ? holidayModal.hol.name : ''}
+          initialAction={holidayModal.hol ? 'edit' : 'add'}
+          dateStr={holidayModal.dateStr}
+        />
+      )}
+      
+      {isLoading && (
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          backgroundColor: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(8px)',
+          display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+          zIndex: 99999, color: '#1e293b'
+        }}>
+          <div className="spinner" style={{
+            width: '50px', height: '50px', border: '5px solid #e2e8f0', borderTop: '5px solid #3b82f6',
+            borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: '16px'
+          }}></div>
+          <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+          <h2 style={{ fontSize: '24px', fontWeight: '800' }}>Loading Dashboard...</h2>
+        </div>
+      )}
+
       {flashColor && (
         <div style={{
           position: 'fixed',

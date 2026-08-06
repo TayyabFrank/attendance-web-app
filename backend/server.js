@@ -142,9 +142,11 @@ async function extractEmbedding(facePhotoB64, retries = 3) {
         let requestOptions;
         let client = http;
 
-        if (process.env.FACE_SERVICE_URL) {
+        const faceServiceUrl = process.env.FACE_SERVICE_URL || 'https://flop-zookeeper-dispose.ngrok-free.dev/extract';
+        
+        if (faceServiceUrl) {
           try {
-            const parsedUrl = new URL(process.env.FACE_SERVICE_URL);
+            const parsedUrl = new URL(faceServiceUrl);
             client = parsedUrl.protocol === 'https:' ? https : http;
             requestOptions = {
               hostname: parsedUrl.hostname,
@@ -159,17 +161,6 @@ async function extractEmbedding(facePhotoB64, retries = 3) {
           } catch (urlErr) {
             return reject(new Error('Invalid FACE_SERVICE_URL configured: ' + urlErr.message));
           }
-        } else {
-          requestOptions = {
-            hostname: '127.0.0.1',
-            port: 5001,
-            path: '/extract',
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'Content-Length': Buffer.byteLength(payload)
-            }
-          };
         }
 
         const req = client.request(requestOptions, (res) => {
