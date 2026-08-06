@@ -13,7 +13,7 @@ except ImportError as e:
 
 # Initialize InsightFace App (uses Buffalo_L by default)
 try:
-    app = FaceAnalysis(name='buffalo_l', allowed_modules=['detection', 'recognition'], providers=['CPUExecutionProvider'])
+    app = FaceAnalysis(name='buffalo_sc', allowed_modules=['detection', 'recognition'], providers=['CPUExecutionProvider'])
     app.prepare(ctx_id=0, det_size=(320, 320))
 except Exception as e:
     sys.stderr.write(f"Initialization error: {e}\n")
