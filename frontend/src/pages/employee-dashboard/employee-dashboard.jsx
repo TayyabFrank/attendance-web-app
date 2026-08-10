@@ -29,33 +29,28 @@ const EmployeeDashboard = () => {
     const parsed = JSON.parse(empData);
     setEmployee(parsed);
 
-    // Fetch personal attendance logs
-    const fetchLogs = async () => {
+    // Fetch personal attendance logs and holidays concurrently
+    const fetchData = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch(`${API_BASE_URL}/api/attendance/logs/${parsed.employeeId}`);
-        if (response.ok) {
-          const data = await response.json();
-          setLogs(data);
-        }
-      } catch (err) {
-        console.error('Failed to fetch logs', err);
-      }
-    };
-    fetchLogs();
+        const [logsRes, holidaysRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/attendance/logs/${parsed.employeeId}`),
+          fetch(`${API_BASE_URL}/api/holidays`)
+        ]);
 
-    const fetchHolidays = async () => {
-      try {
-        const res = await fetch(`${API_BASE_URL}/api/holidays`);
-        if (res.ok) {
-          const data = await res.json();
-          setHolidays(data);
+        if (logsRes.ok) {
+          const logsData = await logsRes.json();
+          setLogs(logsData);
+        }
+        if (holidaysRes.ok) {
+          const holidaysData = await holidaysRes.json();
+          setHolidays(holidaysData);
         }
       } catch (err) {
-        console.error('Failed to fetch holidays', err);
+        console.error('Failed to fetch dashboard data', err);
       }
     };
-    fetchHolidays();
+    fetchData();
   }, [navigate]);
 
   const isMountedRef = useRef(true);

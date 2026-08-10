@@ -969,7 +969,7 @@ app.get('/api/attendance/logs/:employeeId', async (req, res) => {
 app.get('/api/attendance/logs', requireRole(['admin', 'super-admin', 'hr-admin', 'viewer-admin', 'sub-admin']), async (req, res) => {
   try {
     if (supabase) {
-      const { data, error } = await supabase.from('attendance').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('attendance').select('id, employee_id, name, date, check_in, check_out, status, confidence').order('created_at', { ascending: false }).limit(3000);
       if (!error && data) {
         const logs = data.map(log => ({
           _id: log.id,
@@ -979,13 +979,12 @@ app.get('/api/attendance/logs', requireRole(['admin', 'super-admin', 'hr-admin',
           checkIn: log.check_in,
           checkOut: log.check_out,
           status: log.status,
-          confidence: log.confidence,
-          photo: log.photo
+          confidence: log.confidence
         }));
         return res.json(logs);
       }
     }
-    const logs = await Attendance.find({}).select('-photo').sort({ createdAt: -1 });
+    const logs = await Attendance.find({}).select('-photo').sort({ createdAt: -1 }).limit(3000);
     res.json(logs);
   } catch (err) {
     console.error('Fetch all logs error:', err);
@@ -1217,7 +1216,7 @@ app.post('/api/requests', async (req, res) => {
 app.get('/api/requests/employee/:employeeId', async (req, res) => {
   try {
     const { employeeId } = req.params;
-    const requests = await RequestModel.find({ employeeId: employeeId.trim() }).sort({ createdAt: -1 });
+    const requests = await RequestModel.find({ employeeId: employeeId.trim() }).sort({ createdAt: -1 }).limit(500);
     res.json(requests);
   } catch (err) {
     console.error('Fetch employee requests error:', err);
@@ -1309,7 +1308,7 @@ app.get('/api/admins', async (req, res) => {
 app.get('/api/requests', requireRole(['admin', 'super-admin', 'hr-admin', 'viewer-admin', 'sub-admin']), async (req, res) => {
   try {
     if (supabase) {
-      const { data, error } = await supabase.from('requests').select('*').order('created_at', { ascending: false });
+      const { data, error } = await supabase.from('requests').select('*').order('created_at', { ascending: false }).limit(1000);
       if (!error && data) {
         const requests = data.map(req => ({
           _id: req.id,
@@ -1327,7 +1326,7 @@ app.get('/api/requests', requireRole(['admin', 'super-admin', 'hr-admin', 'viewe
         return res.json(requests);
       }
     }
-    const requests = await RequestModel.find({}).sort({ createdAt: -1 });
+    const requests = await RequestModel.find({}).sort({ createdAt: -1 }).limit(1000);
     res.json(requests);
   } catch (err) {
     console.error('Fetch requests error:', err);

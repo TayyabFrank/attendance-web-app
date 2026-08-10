@@ -291,65 +291,71 @@ const History = () => {
     const emp = JSON.parse(loggedEmployee);
     setEmployee(emp);
 
-    // Fetch latest profile from API to update local details like adminMessage
-    fetch(`${API_BASE_URL}/api/employees/${emp.employeeId}/profile`)
-      .then(res => {
-        if (res.ok) return res.json();
-        throw new Error('Failed to fetch profile');
-      })
-      .then(latestEmp => {
-        const updated = {
-          ...emp,
-          ...latestEmp,
-          name: latestEmp.name,
-          department: latestEmp.department,
-          photo: latestEmp.facePhoto || emp.photo,
-          plainPassword: latestEmp.plainPassword || latestEmp.password || emp.plainPassword || emp.password,
-          password: latestEmp.plainPassword || latestEmp.password || emp.plainPassword || emp.password,
-          adminMessage: latestEmp.adminMessage || '',
-          isActive: latestEmp.isActive
-        };
-        setEmployee(updated);
-        try {
-          localStorage.setItem('employee', JSON.stringify(updated));
-        } catch (e) {}
-      })
-      .catch(err => console.error('Error fetching profile:', err));
+    // Group all fetches into Promise.all to load concurrently
+    const loadAllData = async () => {
+      try {
+        const [profRes, logsRes, adminsRes, officeRes, holidaysRes] = await Promise.all([
+          fetch(`${API_BASE_URL}/api/employees/${emp.employeeId}/profile`).catch(() => ({ ok: false })),
+          fetch(`${API_BASE_URL}/api/attendance/logs/${emp.employeeId}`).catch(() => ({ ok: false })),
+          fetch(`${API_BASE_URL}/api/admins`).catch(() => ({ ok: false })),
+          fetch(`${API_BASE_URL}/api/settings/office`).catch(() => ({ ok: false })),
+          fetch(`${API_BASE_URL}/api/holidays`).catch(() => ({ ok: false }))
+        ]);
 
-    // Fetch logs from backend
-    fetch(`${API_BASE_URL}/api/attendance/logs/${emp.employeeId}`)
-      .then(res => res.json())
-      .then(data => {
-        const logsArray = Array.isArray(data) ? data : [];
-        setLogs(logsArray);
-        const present = logsArray.filter(log => log.status === 'Present' || log.status === 'Active' || log.status === 'Manual Verify').length;
-        const absent = logsArray.filter(log => log.status === 'Absent').length;
-        const total = present + absent;
-        const percentage = total > 0 ? Math.round((present / total) * 100) : 100;
-        setStats({ present, absent, percentage });
-      })
-      .catch(err => console.error('Error fetching logs:', err));
+        if (profRes.ok) {
+          const latestEmp = await profRes.json().catch(() => null);
+          if (latestEmp) {
+            const updated = {
+              ...emp,
+              ...latestEmp,
+              name: latestEmp.name,
+              department: latestEmp.department,
+              photo: latestEmp.facePhoto || emp.photo,
+              plainPassword: latestEmp.plainPassword || latestEmp.password || emp.plainPassword || emp.password,
+              password: latestEmp.plainPassword || latestEmp.password || emp.plainPassword || emp.password,
+              adminMessage: latestEmp.adminMessage || '',
+              isActive: latestEmp.isActive
+            };
+            setEmployee(updated);
+            try { localStorage.setItem('employee', JSON.stringify(updated)); } catch (e) {}
+          }
+        }
 
-    // Fetch target admins for message/request selection dropdown
-    fetch(`${API_BASE_URL}/api/admins`)
-      .then(res => res.json())
-      .then(data => setAdminsList(Array.isArray(data) ? data : []))
-      .catch(err => console.error('Error fetching admins:', err));
+        if (logsRes.ok) {
+          const logsData = await logsRes.json().catch(() => []);
+          const logsArray = Array.isArray(logsData) ? logsData : [];
+          setLogs(logsArray);
+          const present = logsArray.filter(log => log.status === 'Present' || log.status === 'Active' || log.status === 'Manual Verify').length;
+          const absent = logsArray.filter(log => log.status === 'Absent').length;
+          const total = present + absent;
+          const percentage = total > 0 ? Math.round((present / total) * 100) : 100;
+          setStats({ present, absent, percentage });
+        }
 
-    // Fetch office settings for calendar holidays
-    fetch(`${API_BASE_URL}/api/settings/office`)
-      .then(res => res.json())
-      .then(data => setOfficeSettings(data))
-      .catch(err => console.error('Error fetching office settings:', err));
+        if (adminsRes.ok) {
+          const adminsData = await adminsRes.json().catch(() => []);
+          setAdminsList(Array.isArray(adminsData) ? adminsData : []);
+        }
 
-    // Fetch holidays
-    fetch(`${API_BASE_URL}/api/holidays`)
-      .then(res => res.json())
-      .then(data => setHolidays(Array.isArray(data) ? data : []))
-      .catch(err => console.error('Error fetching holidays:', err));
+        if (officeRes.ok) {
+          const officeData = await officeRes.json().catch(() => null);
+          if (officeData) setOfficeSettings(officeData);
+        }
 
-    // Load request logs and notification flags
-    fetchEmployeeRequests(emp.employeeId);
+        if (holidaysRes.ok) {
+          const holidaysData = await holidaysRes.json().catch(() => []);
+          setHolidays(Array.isArray(holidaysData) ? holidaysData : []);
+        }
+
+      } catch (err) {
+        console.error('Error fetching dashboard data concurrently:', err);
+      }
+
+      // Load request logs and notification flags (updates state inside function)
+      fetchEmployeeRequests(emp.employeeId);
+    };
+
+    loadAllData();
 
     const intervalId = setInterval(() => {
       fetchEmployeeRequests(emp.employeeId);

@@ -32,40 +32,6 @@ const Dashboard = () => {
   const [notification, setNotification] = useState({ message: '', type: '' });
   const [coords, setCoords] = useState({ latitude: null, longitude: null });
 
-  useEffect(() => {
-
-    fetch(`${API_BASE_URL}/api/settings/office`)
-      .then(res => res.json())
-      .then(data => setOfficeSettings(data))
-      .catch(console.error);
-    fetch(`${API_BASE_URL}/api/holidays`)
-      .then(res => res.json())
-      .then(data => setHolidays(data))
-      .catch(console.error);
-
-    const fetchLocation = async () => {
-      try {
-        try {
-          const position = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
-          setCoords({
-            latitude: position.coords.latitude,
-            longitude: position.coords.longitude
-          });
-        } catch (err) {
-          console.warn("High accuracy failed, falling back to low accuracy:", err);
-          const lowPosition = await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 15000 });
-          setCoords({
-            latitude: lowPosition.coords.latitude,
-            longitude: lowPosition.coords.longitude
-          });
-        }
-      } catch (error) {
-        console.error("Error getting location on dashboard: ", error);
-      }
-    };
-    fetchLocation();
-  }, []);
-
   const fetchNotificationsCount = async (empId) => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/requests/employee/${empId}`);
@@ -117,29 +83,61 @@ const Dashboard = () => {
     }
     const emp = JSON.parse(loggedEmployee);
     setEmployee(emp);
-    fetchTodayStatus(emp.employeeId);
-    fetchNotificationsCount(emp.employeeId);
 
-    fetch(`${API_BASE_URL}/api/employees/${emp.employeeId}/profile`)
-      .then(res => {
-        if (res.ok) return res.json();
-        throw new Error('Failed to fetch profile');
-      })
-      .then(latestEmp => {
-        const mergedEmp = {
-          ...emp,
-          ...latestEmp,
-          plainPassword: latestEmp.plainPassword || latestEmp.password || emp.plainPassword || emp.password,
-          password: latestEmp.plainPassword || latestEmp.password || emp.plainPassword || emp.password
-        };
-        setEmployee(mergedEmp);
+    const loadDashboardData = async () => {
+      const fetchLocation = async () => {
         try {
-          localStorage.setItem('employee', JSON.stringify(mergedEmp));
-        } catch (e) {
-          console.warn('LocalStorage save skipped:', e);
+          try {
+            const position = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 10000 });
+            setCoords({ latitude: position.coords.latitude, longitude: position.coords.longitude });
+          } catch (err) {
+            console.warn("High accuracy failed, falling back to low accuracy:", err);
+            const lowPosition = await Geolocation.getCurrentPosition({ enableHighAccuracy: false, timeout: 15000 });
+            setCoords({ latitude: lowPosition.coords.latitude, longitude: lowPosition.coords.longitude });
+          }
+        } catch (error) {
+          console.error("Error getting location on dashboard: ", error);
         }
-      })
-      .catch(err => console.error('Error fetching profile:', err));
+      };
+
+      const fetchOffice = async () => {
+        try { const res = await fetch(`${API_BASE_URL}/api/settings/office`); if (res.ok) setOfficeSettings(await res.json()); } catch (e) { console.error(e); }
+      };
+
+      const fetchHol = async () => {
+        try { const res = await fetch(`${API_BASE_URL}/api/holidays`); if (res.ok) setHolidays(await res.json()); } catch (e) { console.error(e); }
+      };
+
+      const fetchProfile = async () => {
+        try {
+          const res = await fetch(`${API_BASE_URL}/api/employees/${emp.employeeId}/profile`);
+          if (res.ok) {
+            const latestEmp = await res.json();
+            const mergedEmp = {
+              ...emp,
+              ...latestEmp,
+              plainPassword: latestEmp.plainPassword || latestEmp.password || emp.plainPassword || emp.password,
+              password: latestEmp.plainPassword || latestEmp.password || emp.plainPassword || emp.password
+            };
+            setEmployee(mergedEmp);
+            try { localStorage.setItem('employee', JSON.stringify(mergedEmp)); } catch (e) {}
+          }
+        } catch (err) {
+          console.error('Error fetching profile:', err);
+        }
+      };
+
+      await Promise.all([
+        fetchOffice(),
+        fetchHol(),
+        fetchLocation(),
+        fetchTodayStatus(emp.employeeId),
+        fetchNotificationsCount(emp.employeeId),
+        fetchProfile()
+      ]);
+    };
+
+    loadDashboardData();
   }, [navigate]);
 
   const isMountedRef = useRef(true);

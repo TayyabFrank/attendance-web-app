@@ -586,7 +586,7 @@ const AdminDashboard = () => {
     try {
       const headers = { 'x-user-role': getAdminRole(), };
 
-      // Fetch each endpoint independently so one failure doesn't crash the rest
+      // Use Promise.all to fetch all endpoints concurrently to prevent waterfall delays
       const safeJson = async (res) => {
         try {
           const data = await res.json();
@@ -594,24 +594,30 @@ const AdminDashboard = () => {
         } catch { return []; }
       };
 
-      const empRes = await fetchWithAuth(`${API_BASE_URL}/api/employees?limit=${itemsPerPage}&page=${currentPage}&status=${employeeStatusFilter}&_t=${Date.now()}`, { headers, credentials: 'include' }).catch((err) => { console.error('Employees fetch failed:', err); return { json: async () => ({ employees: [] }) }; });
+      const [empRes, logRes, reqRes] = await Promise.all([
+        fetchWithAuth(`${API_BASE_URL}/api/employees?limit=${itemsPerPage}&page=${currentPage}&status=${employeeStatusFilter}&_t=${Date.now()}`, { headers, credentials: 'include' }).catch((err) => { console.error('Employees fetch failed:', err); return { json: async () => ({ employees: [] }) }; }),
+        fetchWithAuth(`${API_BASE_URL}/api/attendance/logs?_t=${Date.now()}`, { headers, credentials: 'include' }).catch((err) => { console.error('Logs fetch failed:', err); return { json: async () => [] }; }),
+        fetchWithAuth(`${API_BASE_URL}/api/requests?_t=${Date.now()}`, { headers, credentials: 'include' }).catch((err) => { console.error('Requests fetch failed:', err); return { json: async () => [] }; })
+      ]);
+
       let empDataJson = await empRes.json().catch(() => ({ employees: [] }));
       const empData = Array.isArray(empDataJson) ? empDataJson : (empDataJson.employees || []);
-      console.log('Admin Dashboard: fetched employees:', empData);
-
-      const logRes = await fetchWithAuth(`${API_BASE_URL}/api/attendance/logs?_t=${Date.now()}`, { headers, credentials: 'include' }).catch((err) => { console.error('Logs fetch failed:', err); return { json: async () => [] }; });
       const logData = await safeJson(logRes);
-      console.log('Admin Dashboard: fetched logs:', logData);
-
-      const reqRes = await fetchWithAuth(`${API_BASE_URL}/api/requests?_t=${Date.now()}`, { headers, credentials: 'include' }).catch((err) => { console.error('Requests fetch failed:', err); return { json: async () => [] }; });
       const reqData = await safeJson(reqRes);
 
       setRequests(Array.isArray(reqData) ? reqData : []);
 
-      // Process employees status/lastCheckIn based on today's logs
+      // Group logs by employeeId for O(1) lookups instead of O(N*M) loop filtering
+      const logsByEmp = {};
+      logData.forEach(log => {
+        if (!log.checkIn) return;
+        if (!logsByEmp[log.employeeId]) logsByEmp[log.employeeId] = [];
+        logsByEmp[log.employeeId].push(log);
+      });
+
       const todayStr = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
       const processedEmployees = empData.map(emp => {
-        const empLogs = logData.filter(log => log.employeeId === emp.employeeId && log.checkIn);
+        const empLogs = logsByEmp[emp.employeeId] || [];
         empLogs.sort((a, b) => new Date(b.date) - new Date(a.date)); // Sort descending
         const todayLog = empLogs.find(log => log.date === todayStr);
         const latestLog = empLogs.length > 0 ? empLogs[0] : null;
