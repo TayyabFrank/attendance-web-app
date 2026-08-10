@@ -127,14 +127,12 @@ const Dashboard = () => {
         }
       };
 
-      await Promise.all([
-        fetchOffice(),
-        fetchHol(),
-        fetchLocation(),
-        fetchTodayStatus(emp.employeeId),
-        fetchNotificationsCount(emp.employeeId),
-        fetchProfile()
-      ]);
+        await fetchOffice();
+        await fetchHol();
+        await fetchLocation();
+        await fetchTodayStatus(emp.employeeId);
+        await fetchNotificationsCount(emp.employeeId);
+        await fetchProfile();
     };
 
     loadDashboardData();

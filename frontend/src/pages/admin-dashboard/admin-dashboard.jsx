@@ -594,16 +594,17 @@ const AdminDashboard = () => {
         } catch { return []; }
       };
 
-      const [empRes, logRes, reqRes] = await Promise.all([
-        fetchWithAuth(`${API_BASE_URL}/api/employees?limit=${itemsPerPage}&page=${currentPage}&status=${employeeStatusFilter}&_t=${Date.now()}`, { headers, credentials: 'include' }).catch((err) => { console.error('Employees fetch failed:', err); return { json: async () => ({ employees: [] }) }; }),
-        fetchWithAuth(`${API_BASE_URL}/api/attendance/logs?_t=${Date.now()}`, { headers, credentials: 'include' }).catch((err) => { console.error('Logs fetch failed:', err); return { json: async () => [] }; }),
-        fetchWithAuth(`${API_BASE_URL}/api/requests?_t=${Date.now()}`, { headers, credentials: 'include' }).catch((err) => { console.error('Requests fetch failed:', err); return { json: async () => [] }; })
-      ]);
-
+      const empRes = await fetchWithAuth(`${API_BASE_URL}/api/employees?limit=${itemsPerPage}&page=${currentPage}&status=${employeeStatusFilter}&_t=${Date.now()}`, { headers, credentials: 'include' }).catch((err) => { console.error('Employees fetch failed:', err); return { json: async () => ({ employees: [] }) }; });
       let empDataJson = await empRes.json().catch(() => ({ employees: [] }));
       const empData = Array.isArray(empDataJson) ? empDataJson : (empDataJson.employees || []);
+
+      const logRes = await fetchWithAuth(`${API_BASE_URL}/api/attendance/logs?_t=${Date.now()}`, { headers, credentials: 'include' }).catch((err) => { console.error('Logs fetch failed:', err); return { json: async () => [] }; });
       const logData = await safeJson(logRes);
+
+      const reqRes = await fetchWithAuth(`${API_BASE_URL}/api/requests?_t=${Date.now()}`, { headers, credentials: 'include' }).catch((err) => { console.error('Requests fetch failed:', err); return { json: async () => [] }; });
       const reqData = await safeJson(reqRes);
+
+
 
       setRequests(Array.isArray(reqData) ? reqData : []);
 

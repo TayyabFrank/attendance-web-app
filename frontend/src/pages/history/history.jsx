@@ -294,13 +294,11 @@ const History = () => {
     // Group all fetches into Promise.all to load concurrently
     const loadAllData = async () => {
       try {
-        const [profRes, logsRes, adminsRes, officeRes, holidaysRes] = await Promise.all([
-          fetch(`${API_BASE_URL}/api/employees/${emp.employeeId}/profile`).catch(() => ({ ok: false })),
-          fetch(`${API_BASE_URL}/api/attendance/logs/${emp.employeeId}`).catch(() => ({ ok: false })),
-          fetch(`${API_BASE_URL}/api/admins`).catch(() => ({ ok: false })),
-          fetch(`${API_BASE_URL}/api/settings/office`).catch(() => ({ ok: false })),
-          fetch(`${API_BASE_URL}/api/holidays`).catch(() => ({ ok: false }))
-        ]);
+        const profRes = await fetch(`${API_BASE_URL}/api/employees/${emp.employeeId}/profile`).catch(() => ({ ok: false }));
+        const logsRes = await fetch(`${API_BASE_URL}/api/attendance/logs/${emp.employeeId}`).catch(() => ({ ok: false }));
+        const adminsRes = await fetch(`${API_BASE_URL}/api/admins`).catch(() => ({ ok: false }));
+        const officeRes = await fetch(`${API_BASE_URL}/api/settings/office`).catch(() => ({ ok: false }));
+        const holidaysRes = await fetch(`${API_BASE_URL}/api/holidays`).catch(() => ({ ok: false }));
 
         if (profRes.ok) {
           const latestEmp = await profRes.json().catch(() => null);
