@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../../config';
+import { compressImage } from '../../utils/imageCompression';
 import './dashboard.css';
 import '../history/history.css'; // import to share unified navbar styles
 import { Geolocation } from '@capacitor/geolocation';
@@ -282,14 +283,15 @@ const Dashboard = () => {
     return (totalMinutes / 60).toFixed(1);
   };
 
-  const handleProfilePhotosChange = (e) => {
+  const handleProfilePhotosChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setProfileModal(prev => ({ ...prev, facePhotos: [ev.target.result] }));
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressImage(file, 500, 0.7);
+      setProfileModal(prev => ({ ...prev, facePhotos: [compressed] }));
+    } catch (err) {
+      console.error('Error compressing image:', err);
+    }
   };
 
   const handleProfileUpdate = async () => {

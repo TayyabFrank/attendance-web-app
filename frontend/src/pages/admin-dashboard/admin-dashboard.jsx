@@ -1,5 +1,6 @@
 import { API_BASE_URL } from '../../config';
 import { exportAttendanceReport } from '../../utils/pdfExport';
+import { compressImage } from '../../utils/imageCompression';
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './admin-dashboard.css';
@@ -3299,13 +3300,7 @@ const AdminDashboard = () => {
                       setNewEmployee(prev => ({ ...prev, facePhotos: [] }));
                       return;
                     }
-                    const promises = files.map(file => {
-                      return new Promise((resolve) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result);
-                        reader.readAsDataURL(file);
-                      });
-                    });
+                    const promises = files.map(file => compressImage(file, 500, 0.7));
                     Promise.all(promises).then(base64s => {
                       setNewEmployee(prev => ({ ...prev, facePhotos: base64s }));
                     });
@@ -3634,13 +3629,7 @@ const AdminDashboard = () => {
                       e.target.value = null;
                       return;
                     }
-                    const promises = files.map(file => {
-                      return new Promise((resolve) => {
-                        const reader = new FileReader();
-                        reader.onloadend = () => resolve(reader.result);
-                        reader.readAsDataURL(file);
-                      });
-                    });
+                    const promises = files.map(file => compressImage(file, 500, 0.7));
                     Promise.all(promises).then(base64s => {
                       setEditingEmployee(prev => ({ ...prev, facePhotos: base64s }));
                     });

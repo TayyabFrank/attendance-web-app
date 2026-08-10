@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE_URL } from '../../config';
+import { exportAttendanceReport } from '../../utils/pdfExport';
+import { compressImage } from '../../utils/imageCompression';
 import './history.css';
-
-import { useEffect } from 'react';
 
 const History = () => {
   const navigate = useNavigate();
@@ -232,14 +232,15 @@ const History = () => {
     }
   };
 
-  const handleProfilePhotosChange = (e) => {
+  const handleProfilePhotosChange = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      setProfileModal(prev => ({ ...prev, facePhotos: [ev.target.result] }));
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressImage(file, 500, 0.7);
+      setProfileModal(prev => ({ ...prev, facePhotos: [compressed] }));
+    } catch (err) {
+      console.error('Error compressing image:', err);
+    }
   };
 
   const handleProfileUpdate = async () => {
