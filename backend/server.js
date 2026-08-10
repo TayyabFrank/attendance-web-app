@@ -1012,12 +1012,12 @@ app.get('/api/admin/dashboard-data', requireRole(['admin', 'super-admin', 'hr-ad
       // Employees
       (async () => {
         if (supabase) {
-          const { data } = await supabase.from('profiles').select('id, employee_id, name, department, role, departure_time, face_photo').range(skip, skip + limit - 1);
+          const { data } = await supabase.from('profiles').select('id, employee_id, name, department, role, departure_time').range(skip, skip + limit - 1);
           if (data) return data.map(emp => ({
-            _id: emp.id, employeeId: emp.employee_id, name: emp.name, department: emp.department || 'Engineering', role: emp.role, isActive: true, departureTime: emp.departure_time || '05:00 PM', adminMessage: '', facePhoto: emp.face_photo
+            _id: emp.id, employeeId: emp.employee_id, name: emp.name, department: emp.department || 'Engineering', role: emp.role, isActive: true, departureTime: emp.departure_time || '05:00 PM', adminMessage: ''
           }));
         }
-        return await Employee.find(empFilter).select('-password -pin -facePhotos -faceEmbedding').skip(skip).limit(limit).lean();
+        return await Employee.find(empFilter).select('-password -pin -facePhotos -faceEmbedding -facePhoto').skip(skip).limit(limit).lean();
       })(),
       // Logs
       (async () => {
@@ -1094,6 +1094,46 @@ app.get('/api/employees', requireRole(['admin', 'super-admin', 'hr-admin', 'view
   } catch (err) {
     console.error('Fetch employees error:', err);
     res.status(500).json({ error: 'Server error retrieving employees' });
+  }
+});
+
+// 6.5 Serve Employee Face Photo as an Image
+app.get('/api/employees/:employeeId/photo', async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    let base64Photo = null;
+
+    if (supabase) {
+      const { data } = await supabase.from('profiles').select('face_photo').eq('employee_id', employeeId.trim()).single();
+      if (data && data.face_photo) base64Photo = data.face_photo;
+    }
+
+    if (!base64Photo) {
+      const employee = await Employee.findOne({ employeeId: employeeId.trim() }).select('facePhoto facePhotos');
+      if (employee) {
+        if (employee.facePhoto) base64Photo = employee.facePhoto;
+        else if (employee.facePhotos && employee.facePhotos.length > 0) base64Photo = employee.facePhotos[0];
+      }
+    }
+
+    if (!base64Photo || !base64Photo.startsWith('data:image')) {
+      return res.redirect('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150');
+    }
+
+    const matches = base64Photo.match(/^data:(image\/\w+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      return res.redirect('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150');
+    }
+
+    const mimeType = matches[1];
+    const imageBuffer = Buffer.from(matches[2], 'base64');
+
+    res.set('Content-Type', mimeType);
+    res.set('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+    res.send(imageBuffer);
+  } catch (err) {
+    console.error('Fetch photo error:', err);
+    res.redirect('https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150');
   }
 });
 

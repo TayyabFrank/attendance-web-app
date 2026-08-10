@@ -308,8 +308,8 @@ const Dashboard = () => {
       if (response.ok) {
         const data = await response.json();
         showStatusBanner('Profile updated successfully!', 'success');
-        if (data.facePhoto) {
-           const updatedEmp = { ...employee, photo: data.facePhoto };
+        if (data) {
+           const updatedEmp = { ...employee, photo: `${API_BASE_URL}/api/employees/${employee.employeeId}/photo?t=${Date.now()}` };
            setEmployee(updatedEmp);
            localStorage.setItem('employee', JSON.stringify(updatedEmp));
         }

@@ -634,7 +634,7 @@ const AdminDashboard = () => {
           department: emp.department || 'Engineering',
           status: todayLog ? todayLog.status : 'Absent',
           lastCheckIn: lastCheckInDisplay,
-          photo: emp.facePhoto && emp.facePhoto.startsWith('data:') ? emp.facePhoto : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150',
+          photo: `${API_BASE_URL}/api/employees/${emp.employeeId}/photo`,
           role: emp.role || 'employee',
           employeeType: emp.employeeType || 'employee',
           weeklyHours: emp.weeklyHours || 40,

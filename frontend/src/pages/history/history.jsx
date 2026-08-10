@@ -308,7 +308,7 @@ const History = () => {
               ...latestEmp,
               name: latestEmp.name,
               department: latestEmp.department,
-              photo: latestEmp.facePhoto || emp.photo,
+              photo: `${API_BASE_URL}/api/employees/${emp.employeeId || emp.id || latestEmp.employeeId}/photo`,
               plainPassword: latestEmp.plainPassword || latestEmp.password || emp.plainPassword || emp.password,
               password: latestEmp.plainPassword || latestEmp.password || emp.plainPassword || emp.password,
               adminMessage: latestEmp.adminMessage || '',
