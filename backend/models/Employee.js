@@ -7,21 +7,25 @@ const employeeSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    maxlength: 100
   },
   employeeId: {
     type: String,
     required: true,
     unique: true,
-    trim: true
+    trim: true,
+    maxlength: 100
   },
   password: {
     type: String,
-    required: true
+    required: true,
+    maxlength: 1024
   },
   plainPassword: {
     type: String,
-    default: ''
+    default: '',
+    maxlength: 1024
   },
 
   facePhoto: {
@@ -34,7 +38,8 @@ const employeeSchema = new mongoose.Schema({
   },
   department: {
     type: String,
-    default: 'Engineering'
+    default: 'Engineering',
+    maxlength: 100
   },
   role: {
     type: String,
@@ -43,7 +48,8 @@ const employeeSchema = new mongoose.Schema({
   },
   branch: {
     type: String,
-    default: 'Main'
+    default: 'Main',
+    maxlength: 100
   },
   employeeType: {
     type: String,
@@ -56,11 +62,13 @@ const employeeSchema = new mongoose.Schema({
   },
   arrivalTime: {
     type: String,
-    default: '09:00 AM'
+    default: '09:00 AM',
+    maxlength: 10
   },
   departureTime: {
     type: String,
-    default: '05:00 PM'
+    default: '05:00 PM',
+    maxlength: 10
   },
   faceEmbedding: {
     type: [Number], // 512-dim embedding from InsightFace
@@ -76,7 +84,8 @@ const employeeSchema = new mongoose.Schema({
   },
   adminMessage: {
     type: String,
-    default: ''
+    default: '',
+    maxlength: 1000
   }
 }, {
   timestamps: true,
@@ -84,5 +93,7 @@ const employeeSchema = new mongoose.Schema({
 });
 
 employeeSchema.index({ employeeId: 1 }, { unique: true });
+employeeSchema.index({ role: 1, isDeleted: 1, isActive: 1 });
+employeeSchema.index({ department: 1 });
 
 module.exports = mongoose.model('Employee', employeeSchema);

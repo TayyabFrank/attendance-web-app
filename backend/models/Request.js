@@ -7,20 +7,24 @@ const requestSchema = new mongoose.Schema({
   employeeId: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    maxlength: 100
   },
   name: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    maxlength: 100
   },
   requestType: {
     type: String, // 'Correction' or 'Message'
-    required: true
+    required: true,
+    maxlength: 50
   },
   details: {
     type: String,
-    required: true
+    required: true,
+    maxlength: 2000
   },
   status: {
     type: String,

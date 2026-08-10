@@ -5,6 +5,10 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
+const helmet = require('helmet');
+const mongoSanitize = require('express-mongo-sanitize');
+const compression = require('compression');
+const morgan = require('morgan');
 const Employee = require('./models/Employee');
 const Attendance = require('./models/Attendance');
 const RequestModel = require('./models/Request');
@@ -210,7 +214,15 @@ async function extractEmbedding(facePhotoB64, retries = 3) {
 
 const app = express();
 
-// Increase payload size limit to accept base64 image data URIs
+// Security and Optimization Middleware
+app.use(helmet({
+  crossOriginResourcePolicy: false, // Allows cross-origin image loading if needed
+}));
+app.use(mongoSanitize());
+app.use(compression());
+app.use(morgan('dev'));
+
+// Payload size limit to accept base64 image data URIs
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());
@@ -223,6 +235,16 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-user-role']
 }));
+
+// Apply Global Rate Limiting
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 500,
+  message: { error: 'Too many requests from this IP, please try again after 15 minutes' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use('/api', globalLimiter);
 
 // Apply Rate Limiting to prevent brute-force attacks on sensitive endpoints
 const loginLimiter = rateLimit({
@@ -246,6 +268,21 @@ app.use('/.well-known', express.static(path.join(__dirname, '.well-known')));
 
 // MongoDB connection
 const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://uetkskshared_db_user:m9D92J9ab9WBnfnQ@cluster0.svhx4z2.mongodb.net/attendance?retryWrites=true&w=majority';
+
+// --- Global In-Memory Cache for Blazing Fast Scans ---
+let employeeFaceCache = [];
+async function refreshFaceCache() {
+  try {
+    const allEmployees = await Employee.find({ role: 'employee', isDeleted: { $ne: true }, isActive: true })
+                                     .select('_id employeeId name faceEmbedding')
+                                     .lean(); // .lean() makes queries faster by returning plain JSON
+    employeeFaceCache = allEmployees.filter(emp => emp.faceEmbedding && emp.faceEmbedding.length > 0);
+    console.log(`[Cache] Loaded ${employeeFaceCache.length} employee face embeddings into memory.`);
+  } catch (err) {
+    console.error('[Cache] Failed to load employee face embeddings:', err.message);
+  }
+}
+
 mongoose.set('bufferCommands', true); // Allow commands to buffer while connecting (Fix for Vercel cold starts)
 mongoose.connect(MONGO_URI, {
   serverSelectionTimeoutMS: 5000
@@ -254,6 +291,7 @@ mongoose.connect(MONGO_URI, {
     console.log('Connected to MongoDB');
     await seedAdmins();
     await seedDepartments();
+    await refreshFaceCache();
   })
   .catch(err => console.error('MongoDB connection error:', err.message));
 
@@ -504,9 +542,8 @@ app.post('/api/scan-attendance', async (req, res) => {
         return res.status(403).json({ error: `Face verification failed: Biometrics do not match your profile (${(similarity * 100).toFixed(1)}%)` });
       }
     } else {
-      const allEmployees = await Employee.find({ role: 'employee', isDeleted: { $ne: true }, isActive: true }).select('employeeId name faceEmbedding facePhoto');
-      for (const emp of allEmployees) {
-        if (!emp.faceEmbedding || emp.faceEmbedding.length === 0) continue;
+      // BLAZING FAST CACHE LOOKUP
+      for (const emp of employeeFaceCache) {
         const similarity = queryEmbedding.reduce((sum, val, idx) => sum + val * emp.faceEmbedding[idx], 0);
         if (similarity > highestSimilarity) {
           highestSimilarity = similarity;
@@ -534,12 +571,19 @@ app.post('/api/scan-attendance', async (req, res) => {
       }
     }
 
+    // Fetch the photo only after a successful match to save massive bandwidth and RAM
+    let employeePhoto = matchedEmployee.facePhoto;
+    if (!employeePhoto) {
+      const empDb = await Employee.findOne({ employeeId: matchedEmployee.employeeId }).select('facePhoto').lean();
+      if (empDb) employeePhoto = empDb.facePhoto;
+    }
+
     return res.json({
       success: true,
       employee: {
         employeeId: matchedEmployee.employeeId,
         name: matchedEmployee.name,
-        photo: matchedEmployee.facePhoto
+        photo: employeePhoto
       },
       action,
       confidence: `${(highestSimilarity * 100).toFixed(1)}%`,
@@ -996,7 +1040,7 @@ app.get('/api/attendance/logs', requireRole(['admin', 'super-admin', 'hr-admin',
 app.get('/api/admin/dashboard-data', requireRole(['admin', 'super-admin', 'hr-admin', 'viewer-admin', 'sub-admin']), async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 1000;
+    const limit = parseInt(req.query.limit) || 200;
     const skip = (page - 1) * limit;
 
     let empFilter = { isDeleted: { $ne: true } };
@@ -1022,23 +1066,23 @@ app.get('/api/admin/dashboard-data', requireRole(['admin', 'super-admin', 'hr-ad
       // Logs
       (async () => {
         if (supabase) {
-          const { data } = await supabase.from('attendance').select('id, employee_id, name, date, check_in, check_out, status, confidence').order('created_at', { ascending: false }).limit(3000);
+          const { data } = await supabase.from('attendance').select('id, employee_id, name, date, check_in, check_out, status, confidence').order('created_at', { ascending: false }).limit(200);
           if (data) return data.map(log => ({
             _id: log.id, employeeId: log.employee_id, name: log.name, date: log.date, checkIn: log.check_in, checkOut: log.check_out, status: log.status, confidence: log.confidence
           }));
         }
-        return await Attendance.find({}).select('-photo').sort({ createdAt: -1 }).limit(3000).lean();
+        return await Attendance.find({}).select('-photo').sort({ createdAt: -1 }).limit(200).lean();
       })(),
       // Requests
       (async () => {
         if (supabase) {
-          const { data } = await supabase.from('requests').select('*').order('created_at', { ascending: false }).limit(1000);
+          const { data } = await supabase.from('requests').select('*').order('created_at', { ascending: false }).limit(100);
           if (data) return data.map(r => ({
              _id: r.id, employeeId: r.employee_id, employeeName: r.employee_name,
              type: r.type, reason: r.reason, status: r.status, createdAt: r.created_at, date: r.date
           }));
         }
-        return await RequestModel.find({}).sort({ createdAt: -1 }).limit(1000).lean();
+        return await RequestModel.find({}).sort({ createdAt: -1 }).limit(100).lean();
       })()
     ]);
 
@@ -1237,6 +1281,8 @@ app.post('/api/employees', requireRole(['admin', 'super-admin', 'hr-admin', 'sub
     });
 
     await newEmp.save();
+    // Re-sync cache for blazing fast face matching
+    await refreshFaceCache();
     res.status(201).json(newEmp);
   } catch (err) {
     console.error('Add employee error:', err);
@@ -1792,6 +1838,7 @@ app.delete('/api/employees/:employeeId', requireRole(['admin', 'super-admin', 'h
     if (result.matchedCount === 0) {
       return res.status(404).json({ error: 'Employee not found' });
     }
+    await refreshFaceCache();
     res.json({ message: 'Employee removed successfully' });
   } catch (err) {
     console.error('Delete employee error:', err);
@@ -1852,6 +1899,8 @@ app.put('/api/employees/:employeeId', requireRole(['admin', 'super-admin', 'hr-a
       if (isActive !== undefined) employee.isActive = isActive;
       if (adminMessage !== undefined) employee.adminMessage = adminMessage;
       await employee.save();
+      // Re-sync cache if biometrics or status changed
+      await refreshFaceCache();
     }
 
     // Update Supabase

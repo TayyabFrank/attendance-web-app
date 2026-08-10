@@ -7,16 +7,19 @@ const attendanceSchema = new mongoose.Schema({
   employeeId: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    maxlength: 100
   },
   name: {
     type: String,
     required: true,
-    trim: true
+    trim: true,
+    maxlength: 100
   },
   date: {
     type: String, // Format: e.g. "2023-10-24" or "Oct 24, 2023"
-    required: true
+    required: true,
+    maxlength: 50
   },
   checkIn: {
     type: String, // Format: "08:45 AM"
@@ -41,11 +44,13 @@ const attendanceSchema = new mongoose.Schema({
   },
   tasks: {
     type: String,
-    default: ''
+    default: '',
+    maxlength: 2000
   },
   workDone: {
     type: String,
-    default: ''
+    default: '',
+    maxlength: 2000
   },
   photo: {
     type: String // Captured face photo data URL
