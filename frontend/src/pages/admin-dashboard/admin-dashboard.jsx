@@ -594,15 +594,12 @@ const AdminDashboard = () => {
         } catch { return []; }
       };
 
-      const empRes = await fetchWithAuth(`${API_BASE_URL}/api/employees?limit=${itemsPerPage}&page=${currentPage}&status=${employeeStatusFilter}&_t=${Date.now()}`, { headers, credentials: 'include' }).catch((err) => { console.error('Employees fetch failed:', err); return { json: async () => ({ employees: [] }) }; });
-      let empDataJson = await empRes.json().catch(() => ({ employees: [] }));
-      const empData = Array.isArray(empDataJson) ? empDataJson : (empDataJson.employees || []);
-
-      const logRes = await fetchWithAuth(`${API_BASE_URL}/api/attendance/logs?_t=${Date.now()}`, { headers, credentials: 'include' }).catch((err) => { console.error('Logs fetch failed:', err); return { json: async () => [] }; });
-      const logData = await safeJson(logRes);
-
-      const reqRes = await fetchWithAuth(`${API_BASE_URL}/api/requests?_t=${Date.now()}`, { headers, credentials: 'include' }).catch((err) => { console.error('Requests fetch failed:', err); return { json: async () => [] }; });
-      const reqData = await safeJson(reqRes);
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/admin/dashboard-data?limit=${itemsPerPage}&page=${currentPage}&status=${employeeStatusFilter}&_t=${Date.now()}`, { headers, credentials: 'include' }).catch((err) => { console.error('Dashboard data fetch failed:', err); return { json: async () => ({ employees: [], logs: [], requests: [] }) }; });
+      const dashboardData = await res.json().catch(() => ({ employees: [], logs: [], requests: [] }));
+      
+      const empData = Array.isArray(dashboardData.employees) ? dashboardData.employees : [];
+      const logData = Array.isArray(dashboardData.logs) ? dashboardData.logs : [];
+      const reqData = Array.isArray(dashboardData.requests) ? dashboardData.requests : [];
 
 
 

@@ -992,6 +992,67 @@ app.get('/api/attendance/logs', requireRole(['admin', 'super-admin', 'hr-admin',
   }
 });
 
+// 5.5 Get optimized Dashboard Data (Admin)
+app.get('/api/admin/dashboard-data', requireRole(['admin', 'super-admin', 'hr-admin', 'viewer-admin', 'sub-admin']), async (req, res) => {
+  try {
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 1000;
+    const skip = (page - 1) * limit;
+
+    let empFilter = { isDeleted: { $ne: true } };
+    if (req.user.role === 'sub-admin') {
+      empFilter.department = req.user.department;
+    }
+    const statusFilter = req.query.status;
+    if (statusFilter === 'active') empFilter.isActive = { $ne: false };
+    else if (statusFilter === 'inactive') empFilter.isActive = false;
+
+    // Concurrently fetch employees, recent logs, and recent requests
+    const [empDataRes, logsRes, reqDataRes] = await Promise.all([
+      // Employees
+      (async () => {
+        if (supabase) {
+          const { data } = await supabase.from('profiles').select('id, employee_id, name, department, role, departure_time, face_photo').range(skip, skip + limit - 1);
+          if (data) return data.map(emp => ({
+            _id: emp.id, employeeId: emp.employee_id, name: emp.name, department: emp.department || 'Engineering', role: emp.role, isActive: true, departureTime: emp.departure_time || '05:00 PM', adminMessage: '', facePhoto: emp.face_photo
+          }));
+        }
+        return await Employee.find(empFilter).select('-password -pin -facePhotos -faceEmbedding').skip(skip).limit(limit).lean();
+      })(),
+      // Logs
+      (async () => {
+        if (supabase) {
+          const { data } = await supabase.from('attendance').select('id, employee_id, name, date, check_in, check_out, status, confidence').order('created_at', { ascending: false }).limit(3000);
+          if (data) return data.map(log => ({
+            _id: log.id, employeeId: log.employee_id, name: log.name, date: log.date, checkIn: log.check_in, checkOut: log.check_out, status: log.status, confidence: log.confidence
+          }));
+        }
+        return await Attendance.find({}).select('-photo').sort({ createdAt: -1 }).limit(3000).lean();
+      })(),
+      // Requests
+      (async () => {
+        if (supabase) {
+          const { data } = await supabase.from('requests').select('*').order('created_at', { ascending: false }).limit(1000);
+          if (data) return data.map(r => ({
+             _id: r.id, employeeId: r.employee_id, employeeName: r.employee_name,
+             type: r.type, reason: r.reason, status: r.status, createdAt: r.created_at, date: r.date
+          }));
+        }
+        return await RequestModel.find({}).sort({ createdAt: -1 }).limit(1000).lean();
+      })()
+    ]);
+
+    res.json({
+      employees: empDataRes || [],
+      logs: logsRes || [],
+      requests: reqDataRes || []
+    });
+  } catch (err) {
+    console.error('Fetch dashboard data error:', err);
+    res.status(500).json({ error: 'Server error retrieving dashboard data' });
+  }
+});
+
 // 6. Get all employees (Admin)
 app.get('/api/employees', requireRole(['admin', 'super-admin', 'hr-admin', 'viewer-admin', 'sub-admin']), async (req, res) => {
   try {
