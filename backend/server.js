@@ -214,6 +214,9 @@ async function extractEmbedding(facePhotoB64, retries = 3) {
 
 const app = express();
 
+// Required for rate limiting to work behind Vercel's proxy
+app.set('trust proxy', 1);
+
 // Security and Optimization Middleware
 app.use(helmet({
   crossOriginResourcePolicy: false, // Allows cross-origin image loading if needed
@@ -291,7 +294,8 @@ mongoose.connect(MONGO_URI, {
     console.log('Connected to MongoDB');
     await seedAdmins();
     await seedDepartments();
-    await refreshFaceCache();
+    // Do not await this, let it load in the background so Vercel Serverless doesn't timeout!
+    refreshFaceCache().catch(console.error);
   })
   .catch(err => console.error('MongoDB connection error:', err.message));
 
