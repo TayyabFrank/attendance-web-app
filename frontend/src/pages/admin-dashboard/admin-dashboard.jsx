@@ -631,6 +631,7 @@ const AdminDashboard = () => {
 
         return {
           id: emp.employeeId,
+          employeeId: emp.employeeId,
           name: emp.name,
           department: emp.department || 'Engineering',
           status: todayLog ? todayLog.status : 'Absent',
