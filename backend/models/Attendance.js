@@ -56,4 +56,7 @@ const attendanceSchema = new mongoose.Schema({
   }
 });
 
+attendanceSchema.index({ createdAt: -1 });
+attendanceSchema.index({ employeeId: 1, date: -1 });
+
 module.exports = mongoose.model('Attendance', attendanceSchema);

@@ -83,4 +83,6 @@ const employeeSchema = new mongoose.Schema({
   versionKey: false
 });
 
+employeeSchema.index({ employeeId: 1 }, { unique: true });
+
 module.exports = mongoose.model('Employee', employeeSchema);

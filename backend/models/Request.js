@@ -52,4 +52,6 @@ const requestSchema = new mongoose.Schema({
   }
 });
 
+requestSchema.index({ createdAt: -1 });
+
 module.exports = mongoose.model('Request', requestSchema);
