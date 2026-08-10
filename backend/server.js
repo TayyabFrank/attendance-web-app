@@ -1,7 +1,6 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const compression = require('compression');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
@@ -212,7 +211,6 @@ async function extractEmbedding(facePhotoB64, retries = 3) {
 const app = express();
 
 // Increase payload size limit to accept base64 image data URIs
-app.use(compression()); // Compress all JSON and image responses with Gzip
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());
