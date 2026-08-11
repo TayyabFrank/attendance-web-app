@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { checkAndRequestPermissions } from './utils/permissions';
+import { OfflineSyncProvider } from './utils/OfflineSyncProvider';
 import OfflineBanner from './components/OfflineBanner';
 import ErrorBoundary from './components/ErrorBoundary';
 import './App.css';
@@ -28,7 +29,8 @@ function App() {
   }
 
   return (
-    <Router>
+    <OfflineSyncProvider>
+      <Router>
       {/* Main Container */}
       <main className="app-main">
         <OfflineBanner />
@@ -48,6 +50,7 @@ function App() {
         </ErrorBoundary>
       </main>
     </Router>
+    </OfflineSyncProvider>
   );
 }
 

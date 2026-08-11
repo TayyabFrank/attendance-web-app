@@ -3,11 +3,13 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { API_BASE_URL } from '../../config';
 import Clock from '../../utils/Clock';
 import { Geolocation } from '@capacitor/geolocation';
+import { useOfflineSync } from '../../utils/OfflineSyncProvider';
 import './scan.css';
 
 const Scan = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { isOnline, saveOfflineRequest } = useOfflineSync();
   const [loggedEmployee, setLoggedEmployee] = useState(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [scanStatus, setScanStatus] = useState('idle'); // 'idle' | 'scanning' | 'confirm' | 'success'
@@ -486,7 +488,27 @@ const Scan = () => {
       }
     } catch (err) {
       console.error(err);
-      setErrorMsg('Network error, log submission failed');
+      if (!isOnline || err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+        await saveOfflineRequest(`${API_BASE_URL}/api/attendance/submit-log`, 'POST', {
+          employeeId: matchedEmpData.employeeId,
+          action: detectedAction,
+          tasks: '',
+          workDone: '',
+          confidence: verificationConfidence,
+          photo: scannedPhotoB64,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          accuracy: coords.accuracy,
+          isMocked: coords.isMocked,
+          timezoneOffset: new Date().getTimezoneOffset()
+        }, { 'Content-Type': 'application/json' });
+        
+        setScanMessage('Saved offline. Will sync when connected.');
+        setCountdown(3);
+        setScanStatus('success');
+      } else {
+        setErrorMsg('Network error, log submission failed');
+      }
     } finally {
       setIsProcessing(false);
     }
