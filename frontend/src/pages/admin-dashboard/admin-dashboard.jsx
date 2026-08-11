@@ -73,6 +73,8 @@ const AdminDashboard = () => {
   const [roleTypeFilter, setRoleTypeFilter] = useState('All');
   const [departmentToDelete, setDepartmentToDelete] = useState(null);
   const [expandedDept, setExpandedDept] = useState(null);
+  const [deptEmployeeSearch, setDeptEmployeeSearch] = useState('');
+  const [deptEmployeeSort, setDeptEmployeeSort] = useState('name-asc');
   const [attendanceLogs, setAttendanceLogs] = useState([]);
   const [requests, setRequests] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -2586,12 +2588,36 @@ const AdminDashboard = () => {
                 <tbody>
                   {departments.length > 0 ? (
                     departments.map((dept) => {
-                      const deptEmployees = employees.filter(emp => emp.department === dept.name);
+                      let deptEmployees = employees.filter(emp => emp.department === dept.name);
+                      const totalEmployeesInDept = deptEmployees.length;
                       const isExpanded = expandedDept === dept.name;
+
+                      if (isExpanded) {
+                        if (deptEmployeeSearch.trim()) {
+                          const lowerQ = deptEmployeeSearch.toLowerCase();
+                          deptEmployees = deptEmployees.filter(emp => emp.name.toLowerCase().includes(lowerQ) || String(emp.id).toLowerCase().includes(lowerQ));
+                        }
+                        deptEmployees.sort((a, b) => {
+                          if (deptEmployeeSort === 'name-asc') return (a.name || '').localeCompare(b.name || '');
+                          if (deptEmployeeSort === 'name-desc') return (b.name || '').localeCompare(a.name || '');
+                          if (deptEmployeeSort === 'id-asc') return String(a.id).localeCompare(String(b.id));
+                          if (deptEmployeeSort === 'id-desc') return String(b.id).localeCompare(String(a.id));
+                          return 0;
+                        });
+                      }
+
                       return (
                         <React.Fragment key={dept._id}>
                           <tr 
-                            onClick={() => setExpandedDept(isExpanded ? null : dept.name)}
+                            onClick={() => {
+                              if (isExpanded) {
+                                setExpandedDept(null);
+                              } else {
+                                setExpandedDept(dept.name);
+                                setDeptEmployeeSearch('');
+                                setDeptEmployeeSort('name-asc');
+                              }
+                            }}
                             style={{ cursor: 'pointer', transition: 'background-color 0.2s', backgroundColor: isExpanded ? '#f8fafc' : 'transparent' }}
                           >
                             <td className="emp-name" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -2600,7 +2626,7 @@ const AdminDashboard = () => {
                               </svg>
                               {dept.name}
                               <span style={{ fontSize: '12px', backgroundColor: '#e2e8f0', color: '#475569', padding: '2px 8px', borderRadius: '12px', marginLeft: 'auto' }}>
-                                {deptEmployees.length} employees
+                                {totalEmployeesInDept} employees
                               </span>
                             </td>
                             <td onClick={e => e.stopPropagation()}>
@@ -2618,6 +2644,38 @@ const AdminDashboard = () => {
                             <tr>
                               <td colSpan="2" style={{ padding: 0, backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
                                 <div style={{ padding: '16px', maxHeight: '400px', overflowY: 'auto' }}>
+                                  {totalEmployeesInDept > 0 && (
+                                    <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', padding: '0 4px' }}>
+                                      <div style={{ flex: 1, position: 'relative' }}>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }}>
+                                          <circle cx="11" cy="11" r="8"></circle>
+                                          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                        </svg>
+                                        <input 
+                                          type="text" 
+                                          placeholder="Search by name or ID..." 
+                                          className="sleek-input" 
+                                          style={{ width: '100%', padding: '8px 12px 8px 34px', fontSize: '13px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' }}
+                                          value={deptEmployeeSearch}
+                                          onChange={(e) => setDeptEmployeeSearch(e.target.value)}
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                      </div>
+                                      <select 
+                                        className="sleek-select" 
+                                        style={{ padding: '8px 12px', fontSize: '13px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff', outline: 'none', cursor: 'pointer' }}
+                                        value={deptEmployeeSort}
+                                        onChange={(e) => setDeptEmployeeSort(e.target.value)}
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <option value="name-asc">Sort: A to Z</option>
+                                        <option value="name-desc">Sort: Z to A</option>
+                                        <option value="id-asc">Sort: ID Asc</option>
+                                        <option value="id-desc">Sort: ID Desc</option>
+                                      </select>
+                                    </div>
+                                  )}
+                                  
                                   {deptEmployees.length > 0 ? (
                                     <div className="sleek-employee-list">
                                       {deptEmployees.map(emp => (
