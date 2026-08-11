@@ -72,7 +72,9 @@ const AdminDashboard = () => {
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState('All');
   const [roleTypeFilter, setRoleTypeFilter] = useState('All');
   const [departmentToDelete, setDepartmentToDelete] = useState(null);
-  // Accordion states removed as per user request
+  const [expandedDept, setExpandedDept] = useState(null);
+  const [deptEmployeeSearch, setDeptEmployeeSearch] = useState('');
+  const [deptEmployeeSort, setDeptEmployeeSort] = useState('name-asc');
   const [attendanceLogs, setAttendanceLogs] = useState([]);
   const [requests, setRequests] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -1477,7 +1479,7 @@ const AdminDashboard = () => {
     );
     if (!matchesSearch) return false;
 
-    if (selectedDepartmentFilter !== 'All' && emp.department !== selectedDepartmentFilter) {
+    if (selectedDepartmentFilter !== 'All' && (emp.department || '').trim().toLowerCase() !== selectedDepartmentFilter.trim().toLowerCase()) {
       return false;
     }
 
@@ -2586,28 +2588,43 @@ const AdminDashboard = () => {
                 <tbody>
                   {departments.length > 0 ? (
                     departments.map((dept) => {
-                      let deptEmployees = employees.filter(emp => emp.department === dept.name);
+                      let deptEmployees = employees.filter(emp => (emp.department || '').trim().toLowerCase() === (dept.name || '').trim().toLowerCase());
                       const totalEmployeesInDept = deptEmployees.length;
+                      const isExpanded = expandedDept === dept.name;
+
+                      if (isExpanded) {
+                        if (deptEmployeeSearch.trim()) {
+                          const lowerQ = deptEmployeeSearch.toLowerCase();
+                          deptEmployees = deptEmployees.filter(emp => emp.name.toLowerCase().includes(lowerQ) || String(emp.id).toLowerCase().includes(lowerQ));
+                        }
+                        deptEmployees.sort((a, b) => {
+                          if (deptEmployeeSort === 'name-asc') return (a.name || '').localeCompare(b.name || '');
+                          if (deptEmployeeSort === 'name-desc') return (b.name || '').localeCompare(a.name || '');
+                          if (deptEmployeeSort === 'id-asc') return String(a.id).localeCompare(String(b.id));
+                          if (deptEmployeeSort === 'id-desc') return String(b.id).localeCompare(String(a.id));
+                          return 0;
+                        });
+                      }
 
                       return (
                         <React.Fragment key={dept._id}>
                           <tr 
                             onClick={() => {
-                              setSelectedDepartmentFilter(dept.name);
-                              setActiveTab('Employees');
+                              if (isExpanded) {
+                                setExpandedDept(null);
+                              } else {
+                                setExpandedDept(dept.name);
+                                setDeptEmployeeSearch('');
+                                setDeptEmployeeSort('name-asc');
+                              }
                             }}
-                            style={{ cursor: 'pointer', transition: 'background-color 0.2s' }}
-                            onMouseEnter={(e) => e.currentTarget.style.backgroundColor = '#f8fafc'}
-                            onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
+                            style={{ cursor: 'pointer', transition: 'background-color 0.2s', backgroundColor: isExpanded ? '#f8fafc' : 'transparent' }}
                           >
                             <td className="emp-name" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#64748b" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                                <circle cx="9" cy="7" r="4"></circle>
-                                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-                                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                                <polyline points="9 18 15 12 9 6"></polyline>
                               </svg>
-                              <span style={{ fontWeight: '500', color: '#1e293b' }}>{dept.name}</span>
+                              {dept.name}
                               <span style={{ fontSize: '12px', backgroundColor: '#e2e8f0', color: '#475569', padding: '2px 8px', borderRadius: '12px', marginLeft: 'auto' }}>
                                 {totalEmployeesInDept} employees
                               </span>
@@ -2623,6 +2640,77 @@ const AdminDashboard = () => {
                               </button>
                             </td>
                           </tr>
+                          {isExpanded && (
+                            <tr>
+                              <td colSpan="2" style={{ padding: 0, backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                <div style={{ padding: '16px', maxHeight: '400px', overflowY: 'auto' }}>
+                                  {totalEmployeesInDept > 0 && (
+                                    <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', padding: '0 4px' }}>
+                                      <div style={{ flex: 1, position: 'relative' }}>
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)' }}>
+                                          <circle cx="11" cy="11" r="8"></circle>
+                                          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                        </svg>
+                                        <input 
+                                          type="text" 
+                                          placeholder="Search by name or ID..." 
+                                          className="sleek-input" 
+                                          style={{ width: '100%', padding: '8px 12px 8px 34px', fontSize: '13px', borderRadius: '8px', border: '1px solid #cbd5e1', outline: 'none' }}
+                                          value={deptEmployeeSearch}
+                                          onChange={(e) => setDeptEmployeeSearch(e.target.value)}
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                      </div>
+                                      <select 
+                                        className="sleek-select" 
+                                        style={{ padding: '8px 12px', fontSize: '13px', borderRadius: '8px', border: '1px solid #cbd5e1', backgroundColor: '#fff', outline: 'none', cursor: 'pointer' }}
+                                        value={deptEmployeeSort}
+                                        onChange={(e) => setDeptEmployeeSort(e.target.value)}
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <option value="name-asc">Sort: A to Z</option>
+                                        <option value="name-desc">Sort: Z to A</option>
+                                        <option value="id-asc">Sort: ID Asc</option>
+                                        <option value="id-desc">Sort: ID Desc</option>
+                                      </select>
+                                    </div>
+                                  )}
+                                  
+                                  {deptEmployees.length > 0 ? (
+                                    <div className="sleek-employee-list">
+                                      {deptEmployees.map(emp => (
+                                        <div 
+                                          key={emp.id} 
+                                          className="sleek-employee-row"
+                                          onClick={() => setSelectedProfileEmployee(emp)}
+                                          style={{ cursor: 'pointer', backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+                                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                                        >
+                                          <img
+                                            src={emp.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name || 'User')}&background=f1f5f9&color=0f172a&rounded=true`}
+                                            alt={emp.name}
+                                            style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
+                                          />
+                                          <div>
+                                            <div style={{ fontWeight: '600', color: '#0f172a', fontSize: '14px' }}>{emp.name}</div>
+                                            <div style={{ fontSize: '12px', color: '#64748b' }}>ID: {emp.id} • {emp.isActive !== false ? 'Active' : 'Inactive'}</div>
+                                          </div>
+                                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 'auto' }}>
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                          </svg>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div style={{ textAlign: 'center', color: '#64748b', fontSize: '13px', padding: '20px 0' }}>
+                                      No employees in this department.
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
                         </React.Fragment>
                       );
                     })
