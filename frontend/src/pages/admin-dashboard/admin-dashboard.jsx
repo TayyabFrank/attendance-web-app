@@ -2590,6 +2590,8 @@ const AdminDashboard = () => {
                     departments.map((dept) => {
                       let deptEmployees = employees.filter(emp => (emp.department || '').trim().toLowerCase() === (dept.name || '').trim().toLowerCase());
                       const totalEmployeesInDept = deptEmployees.length;
+                      return (
+                        <React.Fragment key={dept._id}>
                           <tr 
                             onClick={() => {
                               setExpandedDept(dept.name);
