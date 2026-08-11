@@ -227,8 +227,8 @@ const EmployeeProfileModal = ({
     }
 
     const isTimeRequired = editAttendance.status === 'Present' || editAttendance.status === 'Pending';
-    if (isTimeRequired && (!editAttendance.checkIn || !editAttendance.checkOut)) {
-      alert('Please fill out all attendance fields for Present/Pending status.');
+    if (isTimeRequired && (!editAttendance.checkIn || !editAttendance.checkOut || editAttendance.checkIn === '--:--' || editAttendance.checkOut === '--:--')) {
+      alert('Please fill out all attendance time fields (Check-In and Check-Out) for Present/Pending status.');
       return;
     }
 
@@ -385,8 +385,8 @@ const EmployeeProfileModal = ({
                   if (date) {
                     setSelectedDate(date);
                     setEditAttendance({
-                      checkIn: log?.checkIn || '09:00 AM',
-                      checkOut: log?.checkOut || '05:00 PM',
+                      checkIn: (log?.checkIn && log.checkIn !== '--:--') ? log.checkIn : '09:00 AM',
+                      checkOut: (log?.checkOut && log.checkOut !== '--:--') ? log.checkOut : '05:00 PM',
                       status: log?.status || 'Present'
                     });
                   }
