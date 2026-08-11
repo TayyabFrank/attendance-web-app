@@ -1,24 +1,22 @@
 const mongoose = require('mongoose');
-require('dotenv').config();
 
-const MONGO_URI = process.env.MONGO_URI;
+async function check() {
+  await mongoose.connect('mongodb+srv://uetkskshared_db_user:m9D92J9ab9WBnfnQ@cluster0.svhx4z2.mongodb.net/attendance?retryWrites=true&w=majority');
+  const db = mongoose.connection.db;
+  
+  const ids = ['1', '2', 1, 2];
+  const emps = await db.collection('employees').find({ employeeId: { $in: ids } }).toArray();
+  console.log("IDs 1 & 2:", emps.map(e => ({ employeeId: e.employeeId, name: e.name, department: e.department, isActive: e.isActive, isDeleted: e.isDeleted, role: e.role })));
+  
+  const viewers = await db.collection('employees').find({ role: 'viewer-admin' }).toArray();
+  console.log("Viewer admins:", viewers.map(e => ({ employeeId: e.employeeId, name: e.name, department: e.department, isActive: e.isActive, isDeleted: e.isDeleted, role: e.role })));
 
-const EmployeeSchema = new mongoose.Schema({}, { strict: false });
-const Employee = mongoose.model('Employee', EmployeeSchema);
+  const allEmps = await db.collection('employees').find({}).toArray();
+  console.log("Total employees:", allEmps.length);
+  
+  const marketingEmps = await db.collection('employees').find({ department: /marketing/i }).toArray();
+  console.log("Marketing emps:", marketingEmps.map(e => ({ employeeId: e.employeeId, name: e.name, department: e.department, isActive: e.isActive, isDeleted: e.isDeleted, role: e.role })));
 
-async function run() {
-  console.log("Connecting to:", MONGO_URI);
-  await mongoose.connect(MONGO_URI);
-  console.log("Connected successfully!");
-
-  const all = await Employee.find({});
-  console.log(`Total employee documents found: ${all.length}`);
-
-  all.forEach(emp => {
-    console.log(`- ID: ${emp.get('employeeId')}, Name: ${emp.get('name')}, Role: ${emp.get('role')}, isDeleted: ${emp.get('isDeleted')}, isActive: ${emp.get('isActive')}`);
-  });
-
-  await mongoose.disconnect();
+  process.exit(0);
 }
-
-run().catch(console.error);
+check().catch(console.error);
