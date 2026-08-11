@@ -2577,12 +2577,12 @@ const AdminDashboard = () => {
 
           <section className="data-table-section" style={{ maxWidth: '600px' }}>
             <h2>Existing Departments</h2>
-            <div className="table-wrapper" style={{ marginTop: '12px' }}>
-              <table className="employees-table">
+            <div className="table-wrapper" style={{ marginTop: '12px', overflowX: 'hidden' }}>
+              <table className="employees-table" style={{ minWidth: '100%', width: '100%' }}>
                 <thead>
                   <tr>
                     <th>Department Name</th>
-                    <th>Actions</th>
+                    <th style={{ width: '120px', textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -2629,7 +2629,7 @@ const AdminDashboard = () => {
                                 {totalEmployeesInDept} employees
                               </span>
                             </td>
-                            <td onClick={e => e.stopPropagation()}>
+                            <td onClick={e => e.stopPropagation()} style={{ textAlign: 'right' }}>
                               <button
                                 className="sleek-btn sleek-btn-remove"
                                 onClick={() => {
