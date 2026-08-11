@@ -4,7 +4,6 @@ import { API_BASE_URL } from '../../config';
 const DepartmentDeleteModal = ({ department, departments, onClose, onConfirm, fetchWithAuth }) => {
   const [employeesInDept, setEmployeesInDept] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [transferTo, setTransferTo] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
@@ -24,8 +23,7 @@ const DepartmentDeleteModal = ({ department, departments, onClose, onConfirm, fe
   }, [department, fetchWithAuth]);
 
   const handleDelete = async () => {
-    if (employeesInDept > 0 && !transferTo) {
-      alert('Please select a department to transfer existing employees to.');
+    if (employeesInDept > 0) {
       return;
     }
     
@@ -34,7 +32,7 @@ const DepartmentDeleteModal = ({ department, departments, onClose, onConfirm, fe
       const response = await fetchWithAuth(`${API_BASE_URL}/api/departments/${encodeURIComponent(department.name)}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transferTo })
+        body: JSON.stringify({})
       });
       
       if (response.ok) {
@@ -63,39 +61,41 @@ const DepartmentDeleteModal = ({ department, departments, onClose, onConfirm, fe
           {loading ? (
             <p>Checking active employees...</p>
           ) : employeesInDept > 0 ? (
-            <div style={{ marginTop: '15px', padding: '15px', backgroundColor: 'rgba(251,191,36,0.15)', borderRadius: '8px', border: '1px solid rgba(251,191,36,0.3)', }}>
-              <p style={{ color: 'var(--accent-yellow)', margin: '0 0 10px 0' }}>
-                <strong>Warning:</strong> There are {employeesInDept} employee(s) currently assigned to this department.
+            <div style={{ marginTop: '15px', padding: '20px', backgroundColor: '#fef2f2', borderRadius: '12px', border: '1px solid #fecaca', textAlign: 'center' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#dc2626" strokeWidth="2" style={{ marginBottom: '8px' }}>
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <p style={{ color: '#991b1b', margin: '0 0 8px 0', fontSize: '15px', fontWeight: '600' }}>
+                Cannot Delete Department
               </p>
-              <label style={{ display: 'block', marginBottom: '5px', color: 'var(--accent-yellow)', fontWeight: 'bold' }}>Transfer employees to:</label>
-              <select 
-                value={transferTo} 
-                onChange={(e) => setTransferTo(e.target.value)}
-                className="form-control" style={{ width: "100%" }}
-              >
-                <option value="">-- Select Department --</option>
-                {departments
-                  .filter(d => d.name !== department.name)
-                  .map(d => (
-                    <option key={d._id || d.name} value={d.name}>{d.name}</option>
-                  ))
-                }
-              </select>
+              <p style={{ color: '#b91c1c', margin: 0, fontSize: '13px', lineHeight: '1.5' }}>
+                There are <strong>{employeesInDept} employees</strong> in it.<br/>
+                First assign them to another department. When it is empty, then it will be deleted.
+              </p>
             </div>
           ) : (
-             <p style={{ marginTop: '15px', color: 'var(--accent-neon)' }}>There are no employees in this department. It is safe to delete.</p>
+             <div style={{ marginTop: '15px', padding: '16px', backgroundColor: '#f0fdf4', borderRadius: '12px', border: '1px solid #bbf7d0', textAlign: 'center' }}>
+                <p style={{ color: '#166534', margin: 0, fontSize: '14px', fontWeight: '500' }}>
+                  There are no employees in this department.<br/>It is safe to delete.
+                </p>
+             </div>
           )}
         </div>
         
-        <div className="modal-actions" style={{ padding: '20px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-          <button className="btn btn-secondary" onClick={onClose} disabled={isDeleting}>Cancel</button>
-          <button 
-            className="btn btn-danger" 
-            onClick={handleDelete} 
-            disabled={isDeleting || (employeesInDept > 0 && !transferTo)}
-          >
-            {isDeleting ? 'Deleting...' : 'Confirm Delete'}
-          </button>
+        <div className="modal-actions" style={{ padding: '20px', display: 'flex', justifyContent: 'flex-end', gap: '12px', borderTop: '1px solid #e2e8f0' }}>
+          <button className="beauty-cancel-btn" onClick={onClose} disabled={isDeleting}>Cancel</button>
+          {employeesInDept === 0 && !loading && (
+            <button 
+              className="beauty-primary-btn" 
+              style={{ backgroundColor: '#dc2626', boxShadow: '0 4px 6px -1px rgba(220, 38, 38, 0.2)' }}
+              onClick={handleDelete} 
+              disabled={isDeleting}
+            >
+              {isDeleting ? 'Deleting...' : 'Confirm Delete'}
+            </button>
+          )}
         </div>
       </div>
     </div>

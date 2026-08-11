@@ -72,6 +72,7 @@ const AdminDashboard = () => {
   const [selectedDepartmentFilter, setSelectedDepartmentFilter] = useState('All');
   const [roleTypeFilter, setRoleTypeFilter] = useState('All');
   const [departmentToDelete, setDepartmentToDelete] = useState(null);
+  const [expandedDept, setExpandedDept] = useState(null);
   const [attendanceLogs, setAttendanceLogs] = useState([]);
   const [requests, setRequests] = useState([]);
   const [departments, setDepartments] = useState([]);
@@ -2584,29 +2585,77 @@ const AdminDashboard = () => {
                 </thead>
                 <tbody>
                   {departments.length > 0 ? (
-                    departments.map((dept) => (
-                      <tr key={dept._id}>
-                        <td className="emp-name">{dept.name}</td>
-                        <td>
-                          <button
-                            onClick={() => {
-                              setDepartmentToDelete(dept);
-                            }}
-                            style={{
-                              padding: '4px 8px',
-                              backgroundColor: '#fee2e2',
-                              color: '#dc2626',
-                              border: '1px solid #fecaca',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '12px'
-                            }}
+                    departments.map((dept) => {
+                      const deptEmployees = employees.filter(emp => emp.department === dept.name);
+                      const isExpanded = expandedDept === dept.name;
+                      return (
+                        <React.Fragment key={dept._id}>
+                          <tr 
+                            onClick={() => setExpandedDept(isExpanded ? null : dept.name)}
+                            style={{ cursor: 'pointer', transition: 'background-color 0.2s', backgroundColor: isExpanded ? '#f8fafc' : 'transparent' }}
                           >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))
+                            <td className="emp-name" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: isExpanded ? 'rotate(90deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}>
+                                <polyline points="9 18 15 12 9 6"></polyline>
+                              </svg>
+                              {dept.name}
+                              <span style={{ fontSize: '12px', backgroundColor: '#e2e8f0', color: '#475569', padding: '2px 8px', borderRadius: '12px', marginLeft: 'auto' }}>
+                                {deptEmployees.length} employees
+                              </span>
+                            </td>
+                            <td onClick={e => e.stopPropagation()}>
+                              <button
+                                className="sleek-btn sleek-btn-remove"
+                                onClick={() => {
+                                  setDepartmentToDelete(dept);
+                                }}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                          {isExpanded && (
+                            <tr>
+                              <td colSpan="2" style={{ padding: 0, backgroundColor: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                                <div style={{ padding: '16px', maxHeight: '400px', overflowY: 'auto' }}>
+                                  {deptEmployees.length > 0 ? (
+                                    <div className="sleek-employee-list">
+                                      {deptEmployees.map(emp => (
+                                        <div 
+                                          key={emp.id} 
+                                          className="sleek-employee-row"
+                                          onClick={() => setSelectedProfileEmployee(emp)}
+                                          style={{ cursor: 'pointer', backgroundColor: '#fff', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '10px 14px', display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px', transition: 'all 0.2s', boxShadow: '0 1px 2px rgba(0,0,0,0.05)' }}
+                                          onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)'; e.currentTarget.style.borderColor = '#cbd5e1'; }}
+                                          onMouseLeave={(e) => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 1px 2px rgba(0,0,0,0.05)'; e.currentTarget.style.borderColor = '#e2e8f0'; }}
+                                        >
+                                          <img
+                                            src={emp.photo || `https://ui-avatars.com/api/?name=${encodeURIComponent(emp.name || 'User')}&background=f1f5f9&color=0f172a&rounded=true`}
+                                            alt={emp.name}
+                                            style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
+                                          />
+                                          <div>
+                                            <div style={{ fontWeight: '600', color: '#0f172a', fontSize: '14px' }}>{emp.name}</div>
+                                            <div style={{ fontSize: '12px', color: '#64748b' }}>ID: {emp.id} • {emp.isActive !== false ? 'Active' : 'Inactive'}</div>
+                                          </div>
+                                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginLeft: 'auto' }}>
+                                            <polyline points="9 18 15 12 9 6"></polyline>
+                                          </svg>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  ) : (
+                                    <div style={{ textAlign: 'center', color: '#64748b', fontSize: '13px', padding: '20px 0' }}>
+                                      No employees in this department.
+                                    </div>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })
                   ) : (
                     <tr>
                       <td colSpan="2" className="no-data-cell">No departments configured.</td>
