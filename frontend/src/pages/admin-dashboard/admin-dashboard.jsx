@@ -825,8 +825,7 @@ const AdminDashboard = () => {
   };
 
   const handleEditClick = (emp) => {
-    setSelectedEmployee(emp);
-    setIsProfileModalOpen(true);
+    setSelectedProfileEmployee(emp);
   };
 
   const handleUpdateEmployee = async (e) => {
@@ -3005,84 +3004,7 @@ const AdminDashboard = () => {
                 )}
               </div>
 
-              {selectedEmployee && (
-                <div className="admin-employee-details-panel">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <h2 style={{ fontSize: '18px', fontWeight: '700', margin: 0 }}>Employee Details</h2>
-                    <button onClick={() => { setSelectedEmployee(null); setIsCalendarEditMode(false); }} style={{ background: 'none', border: 'none', cursor: 'pointer' }}>
-                      <svg width="20" height="20" fill="none" stroke="#64748b" strokeWidth="2" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-                    </button>
-                  </div>
 
-                  <div style={{ display: 'flex', gap: '16px', alignItems: 'center', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
-                    <img src={selectedEmployee.photo} alt={selectedEmployee.name} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #e2e8f0' }} />
-                    <div>
-                      <h3 style={{ fontSize: '16px', fontWeight: '700', color: '#0f172a', margin: '0 0 4px 0' }}>{selectedEmployee.name}</h3>
-                      <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>ID: {selectedEmployee.id} | {selectedEmployee.department}</p>
-                    </div>
-                  </div>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '13px', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center' }}>
-                      <span style={{ fontWeight: '600', color: '#475569', marginRight: '6px' }}>Password:</span>
-                      {credentialsUnlocked ? (
-                        <span style={{ color: '#0f172a', fontWeight: '500' }}>{selectedEmployee.plainPassword || 'N/A'}</span>
-                      ) : (
-                        <button
-                          onClick={() => {
-                            setEditingEmployee(selectedEmployee);
-                            setShowEditModal(true);
-                            // Setting editingEmployee and showing the modal will prompt for the face scan
-                          }}
-                          style={{ padding: '4px 8px', backgroundColor: '#1062b3', color: '#fff', borderRadius: '4px', border: 'none', cursor: 'pointer', fontSize: '11px', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}
-                        >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2" /><path d="M7 11V7a5 5 0 0 1 10 0v4" /></svg>
-                          Unlock to View
-                        </button>
-                      )}
-                    </div>
-                    <div><span style={{ fontWeight: '600', color: '#475569' }}>Weekly Target:</span> <span style={{ color: '#0f172a', fontWeight: '500' }}>{selectedEmployee.weeklyHours} hrs</span></div>
-                    <div><span style={{ fontWeight: '600', color: '#475569' }}>Shift:</span> <span style={{ color: '#0f172a', fontWeight: '500' }}>{selectedEmployee.arrivalTime} - {selectedEmployee.departureTime}</span></div>
-                    <div><span style={{ fontWeight: '600', color: '#475569' }}>Join Date:</span> <span style={{ color: '#0f172a', fontWeight: '500' }}>{selectedEmployee.createdAt ? new Date(selectedEmployee.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A'}</span></div>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', borderBottom: '1px solid #e2e8f0', paddingBottom: '16px' }}>
-                    <button
-                      onClick={() => handleManualEditOpen(selectedEmployee.id, selectedEmployee.name)}
-                      style={{ flex: 1, padding: '8px', backgroundColor: '#3b82f6', color: '#fff', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" /></svg>
-                      Manual Checkout / Edit
-                    </button>
-                    <button
-                      onClick={() => handleMarkLeaveOpen(selectedEmployee)}
-                      style={{ flex: 1, padding: '8px', backgroundColor: '#7c3aed', color: '#fff', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '12px', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '4px' }}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>
-                      Mark Future Leave
-                    </button>
-                  </div>
-
-                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
-                    <button onClick={() => setIsCalendarEditMode(false)} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: 'none', backgroundColor: !isCalendarEditMode ? '#1062b3' : '#f1f5f9', color: !isCalendarEditMode ? '#fff' : '#64748b', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>Daily Hours</button>
-                    <button onClick={() => setIsCalendarEditMode(true)} style={{ flex: 1, padding: '8px', borderRadius: '6px', border: 'none', backgroundColor: isCalendarEditMode ? '#1062b3' : '#f1f5f9', color: isCalendarEditMode ? '#fff' : '#64748b', cursor: 'pointer', fontWeight: '600', fontSize: '13px' }}>Weekly Summary</button>
-                  </div>
-
-                  {!isCalendarEditMode ? (
-                    <div style={{ flex: 1, overflowY: 'auto' }}>
-                      {renderCalendar()}
-                    </div>
-                  ) : (
-                    <div style={{ padding: '16px', backgroundColor: '#f8fafc', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
-                      <h4 style={{ margin: '0 0 12px 0', color: '#1e293b' }}>Weekly Progress</h4>
-                      <div style={{ height: '8px', backgroundColor: '#e2e8f0', borderRadius: '4px', overflow: 'hidden', marginBottom: '8px' }}>
-                        <div style={{ height: '100%', width: '50%', backgroundColor: '#10b981', borderRadius: '4px' }}></div>
-                      </div>
-                      <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>Check the employee dashboard for detailed weekly tracking.</p>
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
           </section>
         </main>
