@@ -825,24 +825,8 @@ const AdminDashboard = () => {
   };
 
   const handleEditClick = (emp) => {
-    setEditingEmployee({
-      id: emp.id,
-      employeeId: emp.id,
-      name: emp.name,
-      department: emp.department,
-      password: '',
-      facePhotos: [],
-      role: emp.role || 'employee',
-      employeeType: emp.employeeType || 'employee',
-      weeklyHours: emp.weeklyHours || 40,
-      arrivalTime: emp.arrivalTime || '09:00 AM',
-      departureTime: emp.departureTime || '05:00 PM',
-      isActive: emp.isActive !== false,
-      adminMessage: emp.adminMessage || ''
-    });
-    setCredentialsUnlocked(false);
-    setCameraActive(false);
-    setShowEditModal(true);
+    setSelectedEmployee(emp);
+    setIsProfileModalOpen(true);
   };
 
   const handleUpdateEmployee = async (e) => {

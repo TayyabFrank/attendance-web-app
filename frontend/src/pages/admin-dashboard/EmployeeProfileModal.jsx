@@ -29,7 +29,8 @@ const EmployeeProfileModal = ({
     weeklyHours: employee.weeklyHours || 40,
     arrivalTime: employee.arrivalTime || '09:00 AM',
     departureTime: employee.departureTime || '05:00 PM',
-    joiningDate: employee.createdAt ? new Date(employee.createdAt).toISOString().split('T')[0] : ''
+    joiningDate: employee?.createdAt ? new Date(employee.createdAt).toISOString().split('T')[0] : '',
+    password: employee?.plainPassword || employee?.password || ''
   });
 
   // Selected date for attendance editing
