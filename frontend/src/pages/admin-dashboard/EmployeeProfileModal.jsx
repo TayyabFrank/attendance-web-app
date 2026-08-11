@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { API_BASE_URL } from '../../config';
+import { compressImage } from '../../utils/imageCompression';
 
 const EmployeeProfileModal = ({ 
   employee, 
@@ -13,6 +14,7 @@ const EmployeeProfileModal = ({
   const [activeTab, setActiveTab] = useState('details'); // 'details', 'attendance', 'photos', 'requests'
   const [loading, setLoading] = useState(false);
   const [profileData, setProfileData] = useState(null);
+  const [biometricPhotos, setBiometricPhotos] = useState(null);
   const [attendanceLogs, setAttendanceLogs] = useState([]);
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [officeSettings, setOfficeSettings] = useState(null);
@@ -64,6 +66,7 @@ const EmployeeProfileModal = ({
   useEffect(() => {
     if (employee) {
       fetchProfile();
+      fetchPhotos();
       fetchAttendance();
       fetchOfficeSettings();
       fetchHolidays();
@@ -103,6 +106,18 @@ const EmployeeProfileModal = ({
       }
     } catch (err) {
       console.error('Failed to fetch profile', err);
+    }
+  };
+
+  const fetchPhotos = async () => {
+    try {
+      const res = await fetchWithAuth(`${API_BASE_URL}/api/employees/${encodeURIComponent(employee.employeeId || employee.id)}/photos?_t=${Date.now()}`, { credentials: 'include' });
+      if (res.ok) {
+        const data = await res.json();
+        setBiometricPhotos(data || []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch photos', err);
     }
   };
 
@@ -161,30 +176,23 @@ const EmployeeProfileModal = ({
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      const uploadPromise = new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onload = async (ev) => {
-          try {
-            const res = await fetchWithAuth(`${API_BASE_URL}/api/employees/${encodeURIComponent(empId)}/photos`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'x-user-role': currentUserRole },
-              body: JSON.stringify({ photo: ev.target.result })
-            });
-            if (res.ok) successCount++;
-            resolve();
-          } catch (err) {
-            console.error('Photo upload error', err);
-            resolve();
-          }
-        };
-        reader.readAsDataURL(file);
-      });
-      await uploadPromise;
+      try {
+        const compressedBase64 = await compressImage(file, 500, 0.7);
+        const res = await fetchWithAuth(`${API_BASE_URL}/api/employees/${encodeURIComponent(empId)}/photos`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'x-user-role': currentUserRole },
+          body: JSON.stringify({ photo: compressedBase64 })
+        });
+        if (res.ok) successCount++;
+      } catch (err) {
+        console.error('Photo upload/compression error', err);
+      }
     }
 
     if (successCount > 0) {
       alert(`${successCount} photo(s) uploaded successfully!`);
       fetchProfile();
+      fetchPhotos();
       if (onUpdate) onUpdate();
     } else {
       alert('Failed to upload photos');
@@ -280,6 +288,8 @@ const EmployeeProfileModal = ({
       });
       if (res.ok) {
         setChatMessageText('');
+        fetchProfile();
+        fetchPhotos();
         if (onUpdate) onUpdate();
       }
     } catch (err) {
@@ -459,9 +469,12 @@ const EmployeeProfileModal = ({
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
               Attendance & Timings
             </button>
-            <button className={`beauty-tab ${activeTab === 'photos' ? 'active' : ''}`} onClick={() => setActiveTab('photos')}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-              Biometric Photos ({profileData?.facePhotos?.length || 0})
+            <button 
+              className={`beauty-tab ${activeTab === 'photos' ? 'active' : ''}`}
+              onClick={() => setActiveTab('photos')}
+            >
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+              Biometric Photos ({biometricPhotos?.length || 0})
             </button>
             <button className={`beauty-tab ${activeTab === 'requests' ? 'active' : ''}`} onClick={() => setActiveTab('requests')}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
@@ -766,10 +779,10 @@ const EmployeeProfileModal = ({
               </div>
 
               <div className="beauty-photos-grid">
-                {profileData?.facePhotos?.map((photo, index) => (
+                {biometricPhotos?.map((photo, index) => (
                   <div key={index} className="beauty-photo-tile">
                     <img src={photo} alt={`Biometric ${index + 1}`} />
-                    {profileData?.facePhotos?.length > 1 && (
+                    {biometricPhotos?.length > 1 && (
                       <button 
                         type="button"
                         onClick={() => handleDeletePhoto(index)}
@@ -785,7 +798,7 @@ const EmployeeProfileModal = ({
                   </div>
                 ))}
 
-                {(!profileData?.facePhotos || profileData.facePhotos.length === 0) && (
+                {(!biometricPhotos || biometricPhotos.length === 0) && (
                   <div className="no-photos-box">
                     <p>No biometric photos uploaded yet for this employee profile.</p>
                   </div>

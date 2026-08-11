@@ -2006,7 +2006,7 @@ app.post('/api/employees/message', requireRole(['admin', 'super-admin', 'hr-admi
 app.get('/api/employees/:employeeId/profile', async (req, res) => {
   try {
     const { employeeId } = req.params;
-    const employee = await Employee.findOne({ employeeId: employeeId.trim(), isDeleted: { $ne: true } }).select('-pin');
+    const employee = await Employee.findOne({ employeeId: employeeId.trim(), isDeleted: { $ne: true } }).select('-pin -facePhotos -faceEmbedding');
     if (!employee) return res.status(404).json({ error: 'Employee not found' });
     const empObj = employee.toObject();
     if (!empObj.plainPassword && empObj.password) {
@@ -2016,6 +2016,19 @@ app.get('/api/employees/:employeeId/profile', async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error fetching profile' });
+  }
+});
+
+// 13.4.1 Get employee biometric photos explicitly
+app.get('/api/employees/:employeeId/photos', async (req, res) => {
+  try {
+    const { employeeId } = req.params;
+    const employee = await Employee.findOne({ employeeId: employeeId.trim(), isDeleted: { $ne: true } }).select('facePhotos');
+    if (!employee) return res.status(404).json({ error: 'Employee not found' });
+    res.json(employee.facePhotos || []);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error fetching photos' });
   }
 });
 
