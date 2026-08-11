@@ -1,5 +1,7 @@
 // Central API and Application configurations
-// TODO: Replace this with your actual Vercel URL for the Capacitor mobile app if you deploy it tomorrow
 export const PRODUCTION_API_URL = 'https://attendance-web-app-five.vercel.app';
 
-export const API_BASE_URL = PRODUCTION_API_URL;
+// Automatically use localhost when running locally, and Vercel in production
+export const API_BASE_URL = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
+  ? 'http://localhost:5000'
+  : PRODUCTION_API_URL;
