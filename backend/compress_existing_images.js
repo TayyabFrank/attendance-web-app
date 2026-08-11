@@ -75,6 +75,24 @@ async function run() {
       }
     }
 
+    // Now process Attendance logs
+    const Attendance = require('./models/Attendance');
+    const logs = await Attendance.find({ photo: { $exists: true, $ne: null } });
+    console.log(`Found ${logs.length} attendance logs with photos to check.`);
+    
+    let logsUpdated = 0;
+    for (const log of logs) {
+      if (log.photo && typeof log.photo === 'string' && log.photo.length > 200000) {
+        const compressed = await compressBase64(log.photo);
+        if (compressed !== log.photo) {
+          log.photo = compressed;
+          await log.save();
+          logsUpdated++;
+        }
+      }
+    }
+    console.log(`Compressed photos for ${logsUpdated} attendance logs.`);
+
     console.log('Compression complete!');
     process.exit(0);
   } catch (err) {

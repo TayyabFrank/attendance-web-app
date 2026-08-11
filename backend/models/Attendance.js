@@ -52,9 +52,6 @@ const attendanceSchema = new mongoose.Schema({
     default: '',
     maxlength: 2000
   },
-  photo: {
-    type: String // Captured face photo data URL
-  },
   createdAt: {
     type: Date,
     default: Date.now

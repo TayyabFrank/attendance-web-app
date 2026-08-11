@@ -587,7 +587,6 @@ app.post('/api/scan-attendance', async (req, res) => {
       employee: {
         employeeId: matchedEmployee.employeeId,
         name: matchedEmployee.name,
-        photo: employeePhoto
       },
       action,
       confidence: `${(highestSimilarity * 100).toFixed(1)}%`,
@@ -708,7 +707,6 @@ async function syncAttendanceToSupabase(log) {
         check_out: log.checkOut,
         status: log.status,
         confidence: log.confidence,
-        photo: log.photo,
         tasks: log.tasks || '',
         work_done: log.workDone || '',
         created_at: log.createdAt || new Date()
@@ -802,7 +800,6 @@ app.post('/api/attendance/scan', async (req, res) => {
       employee: {
         employeeId: employee.employeeId,
         name: employee.name,
-        photo: employee.facePhoto
       },
       action,
       confidence: '--'
@@ -954,7 +951,6 @@ app.post('/api/attendance/submit-log', async (req, res) => {
         status: initialStatus,
         isLate: isLate,
         confidence: confidence || '--',
-        photo: photo || employee.facePhoto,
         tasks: '',
         workDone: ''
       });
@@ -1707,7 +1703,6 @@ app.post('/api/attendance/mark-leave', requireRole(['admin', 'super-admin', 'hr-
         checkOut: '--:--',
         status: 'Leave',
         confidence: '--',
-        photo: employee.facePhoto || 'data:image/svg+xml;utf8,<svg></svg>'
       });
       await log.save();
     }
@@ -1786,7 +1781,6 @@ app.put('/api/attendance/manual-edit', requireRole(['super-admin', 'admin', 'sub
         status: status,
         isLate: isLateVal,
         confidence: '--', // Manual
-        photo: employee.facePhoto || 'data:image/svg+xml;utf8,<svg></svg>'
       });
       await log.save();
     }
@@ -2378,7 +2372,6 @@ const runAutoAbsentCheck = async () => {
             checkOut: '--:--',
             status: 'Absent',
             confidence: '--',
-            photo: emp.facePhoto || 'data:image/svg+xml;utf8,<svg></svg>',
             createdAt: dateObj // Save as that past date
           });
           await newLog.save();
@@ -2612,7 +2605,6 @@ app.post('/api/attendance/dashboard-mark', async (req, res) => {
         status: initialStatus,
         isLate: isLate,
         confidence: '100%',
-        photo: employee.facePhoto
       });
       await log.save();
       await syncAttendanceToSupabase(log);
@@ -2735,7 +2727,6 @@ app.post('/api/attendance/leave', requireRole(['admin', 'super-admin', 'hr-admin
       checkOut: '--:--',
       status: 'Leave',
       confidence: '--',
-      photo: emp.facePhoto,
       adminMessage: reason || 'Leave Requested'
     });
 
