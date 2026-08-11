@@ -1066,12 +1066,12 @@ app.get('/api/admin/dashboard-data', requireRole(['admin', 'super-admin', 'hr-ad
       // Logs
       (async () => {
         if (supabase) {
-          const { data } = await supabase.from('attendance').select('id, employee_id, name, date, check_in, check_out, status, confidence').order('created_at', { ascending: false }).limit(200);
+          const { data } = await supabase.from('attendance').select('id, employee_id, name, date, check_in, check_out, status, confidence').order('created_at', { ascending: false }).limit(3000);
           if (data) return data.map(log => ({
             _id: log.id, employeeId: log.employee_id, name: log.name, date: log.date, checkIn: log.check_in, checkOut: log.check_out, status: log.status, confidence: log.confidence
           }));
         }
-        return await Attendance.find({}).select('-photo').sort({ createdAt: -1 }).limit(200).lean();
+        return await Attendance.find({}).select('-photo').sort({ createdAt: -1 }).limit(3000).lean();
       })(),
       // Requests
       (async () => {
